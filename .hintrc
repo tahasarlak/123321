@@ -1,0 +1,57 @@
+{
+  "extends": [
+    "development"
+  ],
+  "hints": {
+    "axe/forms": [
+      "default",
+      {
+        "select-name": "off",
+        "label": "off"
+      }
+    ],
+    "compat-api/html": [
+      "default",
+      {
+        "ignore": [
+          "meta[name=theme-color]",
+          "iframe[loading]"
+        ]
+      }
+    ],
+    "axe/name-role-value": [
+      "default",
+      {
+        "button-name": "off",
+        "link-name": "off"
+      }
+    ],
+    "no-inline-styles": "off",
+    "axe/text-alternatives": [
+      "default",
+      {
+        "frame-title": "off"
+      }
+    ],
+    "apple-touch-icons": "off",
+    "axe/aria": [
+      "default",
+      {
+        "aria-valid-attr-value": "off",
+        "aria-allowed-attr": "off",
+        "aria-required-children": "off"
+      }
+    ],
+    "button-type": "off",
+    "compat-api/css": [
+      "default",
+      {
+        "ignore": [
+          "text-wrap",
+          "text-wrap: balance"
+        ]
+      }
+    ],
+    "axe/structure": "off"
+  }
+}

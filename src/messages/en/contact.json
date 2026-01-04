@@ -1,0 +1,46 @@
+ {
+    "hero": {
+      "title": "We're Always Here for You",
+      "subtitle": "Any questions, suggestions, feedback, or collaboration ideas? We're happy to hear from you!"
+    },
+    "form": {
+      "title": "Send Us a Message",
+      "description": "We're always ready to answer your questions, suggestions, and feedback. Fill out the form below and we'll get back to you as soon as possible.",
+      "name_label": "Full Name",
+      "name_placeholder": "Your full name",
+      "email_label": "Email",
+      "email_placeholder": "Your valid email",
+      "subject_label": "Subject",
+      "subject_placeholder": "Write the subject of your message",
+      "message_label": "Your Message",
+      "message_placeholder": "Write the details of your message here...",
+      "submit": "Send Message",
+      "sending": "Sending...",
+      "sent": "Message Sent Successfully!",
+      "success": "Your message has been sent successfully! We'll reply soon 🙌",
+      "error_generic": "An error occurred. Please try again.",
+      "error_network": "A network error occurred. Please check your internet connection and try again."
+    },
+    "info": {
+      "title": "Contact Information",
+      "phone": {
+        "title": "Phone",
+        "number": "+98 21 12345678",
+        "hours": "Saturday to Thursday, 9 AM to 5 PM"
+      },
+      "email": {
+        "title": "Email",
+        "address": "info@romacademy.ir"
+      },
+      "address": {
+        "title": "Address",
+        "text": "Tehran, Valiasr Street, No. 1234"
+      },
+      "online": {
+        "title": "Live Chat",
+        "hours": "Daily from 8 AM to 12 AM",
+        "link": "https://t.me/romacademy_support",
+        "link_text": "Live Chat on Telegram"
+      }
+    }
+  }

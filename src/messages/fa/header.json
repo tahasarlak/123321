@@ -1,0 +1,21 @@
+{
+  "courses": "دوره‌ها",
+  "liveClasses": "کلاس‌های زنده",
+  "products": "محصولات",
+  "blog": "وبلاگ",
+  "about": "درباره ما",
+  "contact": "تماس با ما",
+  "dashboard": "داشبورد",
+  "profile": "پروفایل من",
+  "myCourses": "دوره‌های من",
+  "certificates": "گواهی‌ها",
+  "instructorPanel": "پنل استاد",
+  "adminPanel": "پنل مدیریت",
+  "settings": "تنظیمات",
+  "logout": "خروج از حساب",
+  "login": "ورود / ثبت‌نام",
+  "notifications": "اعلان‌ها",
+  "noNotifications": "اعلانی وجود ندارد",
+  "viewAllNotifications": "مشاهده همه اعلان‌ها →",
+  "selectLanguage": "انتخاب زبان"
+}

@@ -1,0 +1,13 @@
+{
+  "title": "Smart Support",
+  "online": "Always online",
+  "close": "Close",
+  "placeholder": "Type your message...",
+  "send": "Send message",
+  "welcome": "Hello {name} 👋",
+  "help": "How can I help you?",
+  "loginRequired": "Please log in first",
+  "sendError": "Error sending message",
+  "serverError": "Server connection problem",
+  "historyError": "Error loading history"
+}

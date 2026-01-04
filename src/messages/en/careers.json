@@ -1,0 +1,26 @@
+{
+  "hero_title": "Build the Future of Dentistry with Us",
+  "hero_desc": "At Rom, we're developing advanced AI tools for dentists worldwide<br />and we're looking for creative, skilled, and passionate people who want to change the world.",
+  "hero_button": "Apply Now",
+  "culture_title": "What Does Rom Culture Mean?",
+  "culture_items": [
+    { "title": "Focus on Real Impact", "desc": "Every line of code and every decision we make should improve a dentist's life." },
+    { "title": "Fearless Innovation", "desc": "Here, failure is part of the path to success — we dare to try big ideas." },
+    { "title": "True Teamwork", "desc": "Collaboration, transparency, and respect — like a family, but professional." }
+  ],
+  "benefits_title": "Why Work at Rom?",
+  "benefits": [
+    { "title": "Comprehensive Health Insurance", "desc": "Including dental services" },
+    { "title": "Rapid Growth & Continuous Learning", "desc": "Working on innovative AI projects" },
+    { "title": "Fully Remote or Hybrid", "desc": "From anywhere in the world" },
+    { "title": "Free Access to All Courses", "desc": "Dentistry and technology education" },
+    { "title": "Energetic Startup Environment", "desc": "No bureaucracy, focused on results" },
+    { "title": "Real Impact", "desc": "Building the future of dentistry with AI" },
+    { "title": "Work-Life Balance", "desc": "Flexible hours and team fun days" },
+    { "title": "Team Events & Trips", "desc": "For good vibes and synergy" }
+  ],
+  "positions_apply_button": "Apply Now",
+  "cta_title": "Ready to Join This Journey?",
+  "cta_desc": "We're always looking for brilliant talents in AI, image processing, and technology.<br />Send your resume now and build the future of dentistry with us.",
+  "cta_form_button": "Contact Form"
+}

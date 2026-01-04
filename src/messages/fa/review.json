@@ -1,0 +1,14 @@
+{
+  "reviews_title": "نظرات کاربران",
+  "average_rating": "بر اساس {count} نظر",
+  "select_rating": "امتیاز خود را انتخاب کنید",
+  "very_bad": "خیلی بد بود",
+  "average": "معمولی بود",
+  "good": "خوب بود",
+  "excellent": "عالی بود!",
+  "comment_placeholder": "نظر خود را بنویسید... (اختیاری)",
+  "submit_review": "ارسال نظر",
+  "review_submitted": "نظر شما با موفقیت ثبت شد و پس از بررسی نمایش داده می‌شود",
+  "review_error": "خطا در ارسال نظر",
+  "login_to_review": "برای ثبت نظر باید وارد شوید"
+}

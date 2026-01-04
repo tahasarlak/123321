@@ -1,0 +1,27 @@
+{
+  "hero_title": "We Are Rom",
+  "hero_subtitle": "Leading the way in specialized dental education and global AI-powered tools<br />Where science, art, and technology unite to create perfect smiles",
+  "intro_title": "What is Rom and where are we headed?",
+  "intro_desc": "We are a leading platform in dentistry, delivering world-class educational courses and AI-based professional tools to the global dental community.",
+  "intro_p1": "With full energy and focus, we are building the best educational and innovative tool experience for dentists and specialists worldwide.",
+  "intro_p2": "Beyond education and professional tools, we have a greater goal: developing dedicated AI tools that make diagnosis, treatment, and clinic management more accurate and efficient on a global scale.",
+  "intro_p3": "To achieve this, we need AI specialists, machine learning experts, medical image processing professionals, and creative developers from around the world.",
+  "intro_p4": "If you are passionate about technology, innovation, and dentistry, Rom is the place for you – with no geographical boundaries.",
+  "story_title": "A story that began with a global dream...",
+  "story_p1": "A group of dentists and tech specialists who believed dental education and tools should meet global standards decided to build a platform that provides this access to everyone.",
+  "story_quote": "Why shouldn't dentists worldwide have access to the best education and most advanced tools?",
+  "story_p2": "And thus <strong>Rom</strong> was born – with a global vision.",
+  "story_p3": "We are at the beginning of our journey, but with full commitment to world-class quality, continuous innovation, and real impact in dentistry.",
+  "values_title": "Our Values",
+  "values": {
+    "quality": { "title": "World-Class Quality", "desc": "Every course and tool is selected and developed to international standards" },
+    "global": { "title": "Global Accessibility", "desc": "Advanced education and tools for dentists in every corner of the world" },
+    "love": { "title": "Love for Smiles", "desc": "All our efforts are dedicated to creating healthier and more beautiful smiles worldwide" },
+    "innovation": { "title": "Continuous Innovation", "desc": "Always pioneering with new technologies, especially artificial intelligence" },
+    "focus": { "title": "Specialized Focus", "desc": "Only dentistry – deep, professional, and world-class" },
+    "speed": { "title": "Speed and Efficiency", "desc": "A fast, smooth, and reliable experience on a global level" }
+  },
+  "team_title": "Join the Global Rom Team",
+  "team_desc": "We are a passionate and international team working every day toward a better future for global dentistry.<br />We especially need AI specialists, image processing experts, and creative developers from around the world.",
+  "cta_button": "Collaborate with Us"
+}
