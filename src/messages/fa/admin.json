@@ -188,8 +188,10 @@
     "bulkActionError": "خطایی در انجام عملیات گروهی رخ داد",
     "exportSuccess": "فایل CSV با موفقیت دانلود شد",
     "exportError": "خطا در دانلود فایل CSV",
-    "noItemSelected": "هیچ کاربری انتخاب نشده است"
-  },
+    "noItemSelected": "هیچ کاربری انتخاب نشده است",
+  "items": "آیتم‌های کاربران",
+      "noItemsFound": "هیچ کاربری یافت نشد"
+    },
 
   "actions": {
     "banSelf": "نمی‌توانید حساب خود را بن کنید.",
@@ -326,6 +328,83 @@
       "bulkUnpublish": "لغو انتشار دسته‌جمعی",
       "addNew": "افزودن دوره جدید",
       "noItemsFound": "هیچ دوره‌ای یافت نشد",
-      "noItemsDescription": "لیست خالی است یا جستجو نتیجه‌ای نداشت."
-    }
+      "noItemsDescription": "لیست خالی است یا جستجو نتیجه‌ای نداشت.",
+        "create_title": "ایجاد دوره جدید",
+      "create_desc":  "افزودن دوره آموزشی جدید"
+    },
+
+
+
+  "instructorCourses": {
+    "pageTitle": "دوره‌های من",
+    "label": "دوره‌های من",
+    "addNew": "ایجاد دوره جدید",
+    "noItemsFound": "هنوز دوره‌ای ایجاد نکرده‌اید",
+    "noItemsDescription": "برای شروع درآمدزایی، اولین دوره آموزشی خود را ایجاد کنید.",
+    "create_title": "ایجاد دوره جدید",
+    "edit_title": "ویرایش دوره"
+  },
+  "instructorGroups": {
+    "pageTitle": "گروه‌های کلاسی",
+    "label": "گروه‌های دانشجویان",
+    "addNew": "ایجاد گروه جدید",
+    "noItemsFound": "هنوز گروهی ایجاد نشده است",
+    "noItemsDescription": "گروه‌های کلاسی برای مدیریت بهتر دانشجویان (شیفت صبح، عصر، ترم‌ها و ...) ایجاد کنید.",
+    "create_title": "ایجاد گروه جدید",
+    "edit_title": "ویرایش گروه"
+  },
+  "instructorEnrollments": {
+    "pageTitle": "درخواست‌های ثبت‌نام",
+    "label": "درخواست‌های ثبت‌نام",
+    "noItemsFound": "در حال حاضر درخواستی وجود ندارد",
+    "noItemsDescription": "وقتی دانشجویی برای دوره‌های شما ثبت‌نام کند، اینجا نمایش داده می‌شود."
+  },
+  "instructorAssignments": {
+    "pageTitle": "تکالیف",
+    "label": "تکالیف",
+    "addNew": "ایجاد تکلیف جدید",
+    "noItemsFound": "هنوز تکلیفی تعریف نشده است",
+    "noItemsDescription": "تکالیف و پروژه‌های تمرینی برای دانشجویان ایجاد کنید."
+  },
+  "instructorCertificates": {
+    "pageTitle": "گواهی‌های صادر شده",
+    "label": "گواهی‌های صادر شده",
+    "noItemsFound": "هنوز گواهی صادر نشده است",
+    "noItemsDescription": "پس از تکمیل دوره توسط دانشجویان، گواهی پایان دوره صادر کنید."
+  },
+  "instructorFiles": {
+    "pageTitle": "فایل‌های ضمیمه",
+    "label": "فایل‌های ضمیمه",
+    "addNew": "آپلود فایل جدید",
+    "noItemsFound": "فایلی آپلود نشده است",
+    "noItemsDescription": "جزوه، فایل‌های تمرینی و منابع آموزشی را آپلود کنید."
+  },
+  "instructorLessons": {
+    "pageTitle": "درس‌ها",
+    "label": "درس‌ها",
+    "addNew": "ایجاد درس جدید",
+    "noItemsFound": "هنوز درسی اضافه نشده است",
+    "noItemsDescription": "محتوای دوره خود را با درس‌های جدید پر کنید."
+  },
+  "instructorSessions": {
+    "pageTitle": "جلسات زنده",
+    "label": "جلسات زنده",
+    "addNew": "برنامه‌ریزی جلسه جدید",
+    "noItemsFound": "جلسه‌ای برنامه‌ریزی نشده است",
+    "noItemsDescription": "کلاس‌های آنلاین، وبینار یا جلسات پرسش و پاسخ برگزار کنید."
+  },
+  "instructorNotifications": {
+    "pageTitle": "اعلان‌های ارسالی",
+    "label": "اعلان‌های ارسالی",
+    "addNew": "ارسال اعلان جدید",
+    "noItemsFound": "اعلانی ارسال نشده است",
+    "noItemsDescription": "به دانشجویان خود درباره تغییرات، تکالیف یا جلسات مهم اطلاع‌رسانی کنید."
+  },
+  "instructorEarnings": {
+    "pageTitle": "درآمد و تسویه حساب",
+    "label": "درآمد و تسویه حساب",
+    "noItemsFound": "هنوز درآمدی ثبت نشده است",
+    "noItemsDescription": "با فروش دوره‌های خود درآمد کسب کنید و درخواست برداشت دهید."
+  }
+ 
 }

@@ -19,8 +19,8 @@ const baseSchema = z.object({
 
   image: z.string().nullable().optional(),
 
-  isActive: z.boolean(),
-  emailVerified: z.boolean(),
+  isActive: z.boolean().optional().default(true),
+  emailVerified: z.boolean().optional(),
 
   universityId: z.number().int().nullable().optional(),
   majorId: z.number().int().nullable().optional(),

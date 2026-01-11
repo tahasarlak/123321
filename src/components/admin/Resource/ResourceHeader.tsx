@@ -1,19 +1,7 @@
-// src/components/admin/ResourceHeader.tsx
-// ← Server Component — بدون "use client"
+"use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
-type StatItem = {
-  key: string;
-  count: number;
-};
-
-type BulkActionItem = {
-  label: string;
-  action: string;
-  icon: React.ReactNode;
-  color: string;
-};
+import { StatItem } from "@/types/resource-types";
 
 type ResourceHeaderProps = {
   resource: string;
@@ -34,8 +22,6 @@ type ResourceHeaderProps = {
       { label: string; icon: LucideIcon; color: string }
     >;
   };
-  // جدید: برای نمایش دکمه‌های عملیات دسته‌جمعی
-  bulkActions?: BulkActionItem[];
 };
 
 export default function ResourceHeader({
@@ -44,9 +30,7 @@ export default function ResourceHeader({
   stats = [],
   translations,
   config,
-  bulkActions = [],
 }: ResourceHeaderProps) {
-  // فرمت عدد فارسی با fallback ایمن
   const formatNumber = (num: number): string => {
     try {
       return num.toLocaleString("fa-IR");
@@ -55,7 +39,6 @@ export default function ResourceHeader({
     }
   };
 
-  // فقط آمارهایی که تنظیمات دارن و شمارنده > 0
   const visibleStats = stats
     .filter((stat) => config.stats?.[stat.key] && stat.count > 0)
     .map((stat) => ({
@@ -64,7 +47,6 @@ export default function ResourceHeader({
       config: config.stats![stat.key]!,
     }));
 
-  // تعیین کلاس گرید برای آمار
   const gridColsClass = (() => {
     if (visibleStats.length === 0) return "";
     if (visibleStats.length === 1) return "md:grid-cols-1";
@@ -73,7 +55,6 @@ export default function ResourceHeader({
     return "md:grid-cols-4";
   })();
 
-  // تبدیل text- به to- برای گرادیان
   const getGradientToColor = (colorClass: string): string => {
     return colorClass.replace(/^text-/, "to-");
   };
@@ -92,7 +73,6 @@ export default function ResourceHeader({
         >
           {translations.pageTitle || config.label}
         </h1>
-
         <p className="text-4xl md:text-5xl font-bold text-foreground/80">
           {translations.totalCount}{" "}
           <span className="text-primary font-black inline-block min-w-[180px] tabular-nums">
@@ -101,40 +81,6 @@ export default function ResourceHeader({
           {totalItems === 1 ? config.singular : config.label}
         </p>
       </header>
-
-      {/* دکمه‌های عملیات دسته‌جمعی */}
-      {bulkActions.length > 0 && (
-        <div className="flex flex-wrap justify-center gap-6 max-w-5xl mx-auto px-6">
-          {bulkActions.map((action) => (
-            <Button
-              key={action.action}
-              size="lg"
-              variant="outline"
-              className={`
-                relative overflow-hidden group
-                px-10 py-8 text-2xl font-bold
-                border-2 ${action.color}
-                hover:shadow-2xl transition-all duration-500
-                hover:scale-105 hover:border-primary/50
-              `}
-              // در حال حاضر فقط ظاهر هست — عملیات واقعی در ResourceManagementPage انجام می‌شه
-              // بعداً می‌تونی onClick اضافه کنی یا از context استفاده کنی
-            >
-              <span className="relative z-10 flex items-center gap-4">
-                {action.icon}
-                <span>{action.label}</span>
-              </span>
-              {/* افکت گرادیان هاور */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                aria-hidden="true"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-r ${action.color} opacity-10`} />
-              </div>
-            </Button>
-          ))}
-        </div>
-      )}
 
       {/* آمار */}
       {visibleStats.length > 0 && (

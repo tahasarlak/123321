@@ -1,15 +1,15 @@
 // src/config/resources/users.ts
 import { Users, Crown, Shield, GraduationCap, PenTool, CheckCircle, AlertCircle, Ban } from "lucide-react";
-import React from "react";
 import {
   createEditAction,
   createBanToggleAction,
   createDeleteAction,
   getUserMainRole,
 } from "./shared";
-import { fetchUsers, fetchUserById } from "@/actions/admin/users";
-import { ROLES, ROLE_DISPLAY_CONFIG } from "@/config/roles"; 
+import { fetchUsers, fetchUserById } from "@/actions/auth/users";
+import { ROLES, ROLE_DISPLAY_CONFIG } from "@/config/roles";
 import { Gender } from "@prisma/client";
+import { createUserAction, updateUserAction } from "@/actions/auth/users";
 import { User } from "@/types/user";
 
 const ROLE_PARAM_MAP: Record<string, string> = {
@@ -41,12 +41,12 @@ export const usersConfig = {
       options: (stats: { key: string; count: number }[]) => {
         const statsMap = Object.fromEntries(stats.map((s) => [s.key, s.count]));
         return ROLES.map((role) => {
-          const prismaKey = role.value; // حالا دقیقاً همونه: SUPER_ADMIN و غیره
+          const prismaKey = role.value;
           const paramValue = ROLE_PARAM_MAP[prismaKey] || prismaKey.toLowerCase();
           return {
             value: paramValue,
             label: `${role.label} (${statsMap[prismaKey] ?? 0})`,
-            icon: role.icon && React.createElement(role.icon, { className: "w-4 h-4" }),
+            icon: role.icon, // ← درست: فقط کامپوننت
           };
         });
       },
@@ -56,7 +56,6 @@ export const usersConfig = {
     title: (user: User) => user.name || "بدون نام",
     subtitle: (user: User) => user.email,
     avatar: (user: User) => user.name?.[0]?.toUpperCase() ?? "?",
-    // استفاده از ROLE_DISPLAY_CONFIG به جای ROLE_BADGE_MAP قدیمی
     badge: (user: User) => {
       const mainRole = getUserMainRole(user.roles);
       const config = ROLE_DISPLAY_CONFIG[mainRole];
@@ -97,13 +96,13 @@ export const usersConfig = {
     {
       label: "مسدود کردن دسته‌جمعی",
       action: "ban",
-      icon: React.createElement(Ban, { className: "w-6 h-6" }),
+      icon: Ban, // ← درست: فقط کامپوننت
       color: "bg-destructive text-white hover:bg-destructive/90",
     },
     {
       label: "رفع مسدودیت دسته‌جمعی",
       action: "unban",
-      icon: React.createElement(CheckCircle, { className: "w-6 h-6" }),
+      icon: CheckCircle, // ← درست
       color: "bg-green-600 text-white hover:bg-green-700",
     },
   ],
@@ -125,8 +124,8 @@ export const usersConfig = {
         type: "select",
         name: "gender",
         label: "جنسیت",
+        placeholder: "جنسیت را انتخاب کنید",
         options: [
-          { value: "", label: "انتخاب کنید" },
           { value: Gender.MALE, label: "مرد" },
           { value: Gender.FEMALE, label: "زن" },
           { value: Gender.OTHER, label: "سایر" },
@@ -153,4 +152,6 @@ export const usersConfig = {
       },
     ],
   },
+  createAction: createUserAction,
+  updateAction: updateUserAction,
 } as const;

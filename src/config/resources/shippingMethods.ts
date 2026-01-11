@@ -1,12 +1,11 @@
 // src/config/resources/shippingMethods.ts
 import { Truck, CheckCircle, XCircle, Trash2 } from "lucide-react";
-import React from "react";
 import {
   createEditAction,
   createDeleteAction,
   COMMON_CLASSES,
 } from "./shared";
-import { fetchShippingMethods } from "@/actions/admin/shippingMethods";
+import { fetchShippingMethods } from "@/actions/products/shippingMethods";
 
 interface ShippingMethod {
   id: string;
@@ -24,14 +23,11 @@ export const shippingMethodsConfig = {
   icon: Truck,
   color: "text-orange-600",
   createHref: "/dashboard/admin/shipping-methods/create",
-
   stats: {
     active: { label: "فعال", icon: CheckCircle, color: "text-green-600" },
     inactive: { label: "غیرفعال", icon: XCircle, color: "text-red-600" },
   },
-
   filters: [] as const,
-
   card: {
     title: (method: ShippingMethod) => method.title,
     subtitle: (method: ShippingMethod) => method.description || "بدون توضیح",
@@ -45,11 +41,11 @@ export const shippingMethodsConfig = {
       { text: `اولویت: ${method.priority}`, class: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300" },
     ],
     details: (method: ShippingMethod): { label: string; value: string }[] => [
-      { 
-        label: "تاریخ ایجاد", 
-        value: new Date(method.createdAt).toLocaleDateString("fa-IR") + 
-               " - " + 
-               new Date(method.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" }) 
+      {
+        label: "تاریخ ایجاد",
+        value: new Date(method.createdAt).toLocaleDateString("fa-IR") +
+              " - " +
+              new Date(method.createdAt).toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" })
       },
     ],
     status: (method: ShippingMethod) => ({
@@ -58,7 +54,6 @@ export const shippingMethodsConfig = {
       color: method.isActive ? "text-green-600" : "text-red-600",
     }),
   },
-
   actions: (method: ShippingMethod, helpers?: any) => [
     createEditAction("shipping-methods", method, helpers),
     {
@@ -69,31 +64,27 @@ export const shippingMethodsConfig = {
     },
     createDeleteAction(method, helpers),
   ],
-
   bulkActions: [
     {
       label: "فعال کردن دسته‌جمعی",
       action: "activate",
-      icon: React.createElement(CheckCircle, { className: "w-6 h-6" }),
+      icon: CheckCircle, // ← اصلاح شد
       color: "bg-green-600 text-white hover:bg-green-700",
     },
     {
       label: "غیرفعال کردن دسته‌جمعی",
       action: "deactivate",
-      icon: React.createElement(XCircle, { className: "w-6 h-6" }),
+      icon: XCircle, // ← اصلاح شد
       color: "bg-red-600 text-white hover:bg-red-700",
     },
     {
       label: "حذف دسته‌جمعی",
       action: "delete",
-      icon: React.createElement(Trash2, { className: "w-6 h-6" }),
+      icon: Trash2, // ← اصلاح شد
       color: "bg-destructive text-white hover:bg-destructive/90",
     },
   ],
-
   fetchAction: fetchShippingMethods,
-
-  // === فرم عمومی بدون prisma و بدون ایمپورت کامپوننت ===
   form: {
     fields: [
       { type: "text", name: "title", label: "عنوان روش ارسال", required: true, placeholder: "تیپاکس، پست پیشتاز، پیک موتوری" },
@@ -102,8 +93,5 @@ export const shippingMethodsConfig = {
       { type: "number", name: "priority", label: "اولویت نمایش (عدد بالاتر = بالاتر)", required: true, defaultValue: 10 },
       { type: "checkbox", name: "isActive", label: "روش فعال", defaultChecked: true },
     ],
-    // preload نیاز نداره — همه فیلدها دستی هستن
-    // fetchOne در صفحه edit انجام می‌شه
-    // schema و onSubmitAction در صفحات عمومی تعریف می‌شه
   },
 } as const;

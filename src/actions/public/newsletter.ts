@@ -1,4 +1,3 @@
-// src/actions/public/newsletter.ts  (یا هر مسیری که داری)
 "use server";
 
 import { revalidatePath } from "next/cache";

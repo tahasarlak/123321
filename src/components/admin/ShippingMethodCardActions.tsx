@@ -2,7 +2,7 @@
 "use client";
 
 import { ToggleLeft, ToggleRight, Trash2 } from "lucide-react";
-import { toggleMethod, deleteMethod } from "@/actions/admin/shippingMethods";
+import { toggleMethod, deleteMethod } from "@/actions/products/shippingMethods";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 

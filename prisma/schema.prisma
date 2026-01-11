@@ -1,1364 +1,3685 @@
-generator client {
-  provider = "prisma-client-js"
-}
+        generator client {
+          provider = "prisma-client-js"
+        }
 
-datasource db {
-  provider = "postgresql"
-  // این خط رو حتماً اضافه کن – بهترین روش
-}
+        datasource db {
+          provider = "postgresql"
+        }
 
-// ==================== ENUMS ====================
-enum Gender {
-  MALE
-  FEMALE
-  OTHER
-}
+        // ==================== ENUMS ====================
+        enum Gender {
+          MALE
+          FEMALE
+          OTHER
+        }
 
-enum AcademicStatus {
-  ACTIVE
-  GRADUATED
-  DROPPED_OUT
-  SUSPENDED
-}
+        enum AcademicStatus {
+          ACTIVE
+          GRADUATED
+          DROPPED_OUT
+          SUSPENDED
+          ON_LEAVE
+        }
 
-enum OrderStatus {
-  PENDING
-  PAID
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-}
+        enum OrderStatus {
+          PENDING
+          PAID
+          PROCESSING
+          SHIPPED
+          DELIVERED
+          CANCELLED
+          REFUNDED
+        }
 
-enum CourseType {
-  RECORDED
-  LIVE
-  HYBRID
-}
+        enum CourseType {
+          RECORDED
+          LIVE
+          HYBRID
+        }
 
-enum CourseStatus {
-  DRAFT
-  PENDING_REVIEW
-  PUBLISHED
-  ARCHIVED
-  REJECTED
-}
+        enum CourseStatus {
+          DRAFT
+          PENDING_REVIEW
+          PUBLISHED
+          ARCHIVED
+          REJECTED
+        }
 
-enum EnrollmentStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  CANCELLED
-}
+        enum EnrollmentStatus {
+          PENDING
+          APPROVED
+          REJECTED
+          CANCELLED
+        }
 
-enum GroupRole {
-  STUDENT
-  ASSISTANT
-  MONITOR
-}
+        enum GroupRole {
+          STUDENT
+          ASSISTANT
+          MONITOR
+        }
 
-enum SessionType {
-  LIVE_CLASS
-  RECORDED_CLASS
-  WORKSHOP
-  EXAM
-  OFFICE_HOUR
-  Q_A
-}
+        enum SessionType {
+          LIVE_CLASS
+          RECORDED_CLASS
+          WORKSHOP
+          EXAM
+          OFFICE_HOUR
+          Q_A
+        }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  LATE
-  EXCUSED
-}
+        enum AttendanceStatus {
+          PRESENT
+          ABSENT
+          LATE
+          EXCUSED
+        }
 
-enum TicketStatus {
-  OPEN
-  PENDING
-  RESOLVED
-  CLOSED
-}
+        enum TicketStatus {
+          OPEN
+          PENDING
+          RESOLVED
+          CLOSED
+        }
 
-enum TicketPriority {
-  LOW
-  MEDIUM
-  HIGH
-  URGENT
-}
+        enum TicketPriority {
+          LOW
+          MEDIUM
+          HIGH
+          URGENT
+        }
 
-enum MessageSender {
-  USER
-  SUPPORT
-  AI
-}
+        enum MessageSender {
+          USER
+          SUPPORT
+          AI
+        }
 
-enum PaymentMethod {
-  ONLINE
-  OFFLINE
-}
+        enum PaymentMethod {
+          ONLINE
+          OFFLINE
+        }
 
-enum PaymentStatus {
-  PENDING
-  PAID
-  PENDING_APPROVAL
-  REJECTED
-  FAILED
-}
+        enum PaymentStatus {
+          PENDING
+          PAID
+          PENDING_APPROVAL
+          REJECTED
+          FAILED
+        }
 
-enum DiscountType {
-  PERCENT
-  FIXED
-}
 
-enum DiscountScope {
-  ALL
-  SPECIFIC
-  CATEGORY
-  MINIMUM
-}
 
-enum DiscountUsageLimitType {
-  UNLIMITED
-  ONCE_PER_USER
-  TOTAL_LIMIT
-}
 
-enum PaymentAccountType {
-  CARD_TO_CARD
-  BANK_TRANSFER
-  CRYPTO
-}
 
-enum PaymentAccountOwnerType {
-  SITE
-  INSTRUCTOR
-  CUSTOM
-}
 
-enum PickupLocationIcon {
-  METRO // مترو
-  UNIVERSITY // دانشگاه
-  HOSPITAL // بیمارستان / پلی‌کلینیک
-  OFFICE // دفتر / شرکت
-  STORE // فروشگاه / نمایندگی
-  WAREHOUSE // انبار
-  CAFE // کافی‌شاپ
-  PHARMACY // داروخانه
-  AIRPORT // فرودگاه
-  CUSTOM // سفارشی (پیش‌فرض)
-}
+        enum PaymentAccountType {
+          CARD_TO_CARD
+          BANK_TRANSFER
+          CRYPTO
+        }
 
-// ==================== MODELS ====================
+        enum PaymentAccountOwnerType {
+          SITE
+          INSTRUCTOR
+          CUSTOM
+        }
 
-model ExchangeRate {
-  id           String   @id @default(cuid())
-  fromCurrency String
-  toCurrency   String
-  rate         Float
-  updatedAt    DateTime @updatedAt
+        enum PickupLocationIcon {
+          METRO // مترو
+          UNIVERSITY // دانشگاه
+          HOSPITAL // بیمارستان / پلی‌کلینیک
+          OFFICE // دفتر / شرکت
+          STORE // فروشگاه / نمایندگی
+          WAREHOUSE // انبار
+          CAFE // کافی‌شاپ
+          PHARMACY // داروخانه
+          AIRPORT // فرودگاه
+          CUSTOM // سفارشی (پیش‌فرض)
+        }
 
-  @@unique([fromCurrency, toCurrency])
-}
+        // ==================== MODELS ====================
 
-model Country {
-  id              String           @id @default(cuid())
-  name            String           @unique
-  code            String           @unique
-  currency        String           @default("IRR")
-  flagEmoji       String
-  flagSvg         String?
-  callingCode     String?          @default("+98")
-  isActive        Boolean          @default(true)
-  provinces       Province[]
-  paymentAccounts PaymentAccount[]
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
-  zones ShippingZone[] @relation("ZoneCountries")
-  @@index([code])
-  @@index([currency])
-  @@index([isActive])
-}
+        model ExchangeRate {
+          id           String   @id @default(cuid())
+          fromCurrency String
+          toCurrency   String
+          rate         Float
+          updatedAt    DateTime @updatedAt
 
-model Province {
-  id        String   @id @default(cuid())
-  name      String
-  countryId String
-  country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
-  cities    City[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+          @@unique([fromCurrency, toCurrency])
+        }
 
-  @@unique([name, countryId])
-}
+      model Country {
+        id              String   @id @default(cuid())
+        name            String   @unique
+        code            String   @unique
+        currency        String   @default("IRR")
+        flagEmoji       String
+        flagSvg         String?
+        callingCode     String?  @default("+98")
+        isActive        Boolean  @default(true)
+        provinces       Province[]
+        paymentAccounts PaymentAccount[]
+        createdAt       DateTime @default(now())
+        updatedAt       DateTime @updatedAt
+        zones           ShippingZone[] @relation("ZoneCountries")
+        taxRates               TaxRate[]
+        // ←←←← این خط رو حتماً اضافه کن
+        allowedCourses  CourseAllowedCountry[]
 
-model City {
-  id         String   @id @default(cuid())
-  name       String
-  provinceId String
-  province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
+        @@index([code])
+        @@index([currency])
+        @@index([isActive])
+      }
 
-  pickupLocations PickupLocation[]
+        model Province {
+          id        String   @id @default(cuid())
+          name      String
+          countryId String
+          country   Country  @relation(fields: [countryId], references: [id], onDelete: Cascade)
+          cities    City[]
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+          @@unique([name, countryId])
+        }
 
-  @@unique([name, provinceId])
-}
+        model City {
+          id         String   @id @default(cuid())
+          name       String
+          provinceId String
+          province   Province @relation(fields: [provinceId], references: [id], onDelete: Cascade)
 
-model ShippingMethod {
-  id              String   @id @default(cuid())
-  title           String
-  type            ShippingMethodType
-  cost            Int?
-  costPercent     Float?
-  freeAbove       Int?
-  estimatedDays   String?
-  priority        Int      @default(0)
-  isActive        Boolean  @default(true)
+          pickupLocations PickupLocation[]
 
-  // یا به زون وصل یا به pickup (برای PRESENTIAL)
-  zoneId          String?
-  zone            ShippingZone? @relation("ZoneMethods", fields: [zoneId], references: [id])
-  pickupId        String?
-  pickup          PickupLocation? @relation("PickupMethods", fields: [pickupId], references: [id])
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
 
-  products        Product[] @relation("ProductShippingMethods")
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
+          @@unique([name, provinceId])
+        }
 
-enum ShippingMethodType {
-  POST // پست پیشتاز، سفارشی
-  COURIER // پیک موتوری، اسنپ‌باکس
-  TIPAX // تیپاکس، چاپار
-  INTERNATIONAL // DHL, Aramex
-  PRESENTIAL // تحویل حضوری (همون Pickup)
-  FREE // رایگان (مثلاً برای دانلود دیجیتال)
-}
+        model ShippingMethod {
+      id String @id @default(cuid())
+      title String
+      type ShippingMethodType
+      cost Int?
+      costPercent Float?
+      freeAbove Int?
+      estimatedDays String?
+      priority Int @default(0)
+      isActive Boolean @default(true)
+      orderItemAssignments OrderShippingAssignment[] @relation("OrderItemShippingMethod")
+      zoneId String?
+      zone ShippingZone? @relation("ZoneMethods", fields: [zoneId], references: [id])
+      pickupId String?
+      pickup PickupLocation? @relation("PickupMethods", fields: [pickupId], references: [id])
+      cartItemAssignments CartItemShippingAssignment[] @relation("CartItemShippingMethods")
+      products Product[] @relation("ProductShippingMethods")
 
-model PaymentAccount {
-  id         String             @id @default(cuid())
-  title      String
-  type       PaymentAccountType
-  cardNumber String?
-  iban       String?
-  holderName String
-  bankName   String
-  countryId  String
-  country    Country            @relation(fields: [countryId], references: [id])
-  currency   String             @default("IRR")
-  isActive   Boolean            @default(true)
-  priority   Int                @default(0)
+      carts Cart[]               
+      orders Order[]            
 
-  ownerType PaymentAccountOwnerType
-  ownerId   String? // فقط برای CUSTOM و INSTRUCTOR استفاده میشه
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+    }
 
-  // فقط برای INSTRUCTOR
-  instructorId String?
-  instructor   User?   @relation("InstructorPaymentAccounts", fields: [instructorId], references: [id])
+        enum ShippingMethodType {
+          POST // پست پیشتاز، سفارشی
+          COURIER // پیک موتوری، اسنپ‌باکس
+          TIPAX // تیپاکس، چاپار
+          INTERNATIONAL // DHL, Aramex
+          PRESENTIAL // تحویل حضوری (همون Pickup)
+          FREE // رایگان (مثلاً برای دانلود دیجیتال)
+        }
 
-  // بقیه relation ها...
-  products  Product[] @relation("ProductPaymentAccounts")
-  courses   Course[]  @relation("CoursePaymentAccounts")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
+       model PaymentAccount {
+  id                String       @id @default(cuid())
+  title             String
+  type              PaymentAccountType
+  cardNumber        String?
+  iban              String?
+  holderName        String
+  bankName          String
+  countryId         String
+  country           Country      @relation(fields: [countryId], references: [id])
+  currency          String       @default("IRR")
+  isActive          Boolean      @default(true)
+  priority          Int          @default(0)
+  ownerType         PaymentAccountOwnerType
+  ownerId           String?
+  instructorId      String?
+  instructor        User?        @relation("InstructorPaymentAccounts", fields: [instructorId], references: [id])
+  products          Product[]    @relation("ProductPaymentAccounts")
+  courses           Course[]     @relation("CoursePaymentAccounts")
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
   @@index([ownerType])
   @@index([isActive])
 }
 
-model Product {
-  id                String           @id @default(cuid())
-  title             String
-  slug              String           @unique
-  description       String?
-  price             Json
-  stock             Int              @default(0)
-  image             String?
-  gallery           Json             @default("[]")
-  brand             String?
-  categoryId        String?
-  category          Category?        @relation(fields: [categoryId], references: [id])
-  discountPercent   Int?
-  maxDiscountAmount Json?
-  shippingZoneId    String?
-  shippingCountries Json
-  freeShippingAbove Int?
-  shippingTime      String?
-  pickupLocationId  String?
-  shippingMethods   ShippingMethod[] @relation("ProductShippingMethods")
-  paymentAccounts   PaymentAccount[] @relation("ProductPaymentAccounts")
-  isActive          Boolean          @default(true)
-  isVisible         Boolean          @default(true)
-  discounts         Discount[]       @relation("ProductDiscounts")
-  tags              Tag[]            @relation("ProductTags")
-  likes             Like[]
-  reviews           Review[]
-  comments          Comment[]        @relation("ProductComments")
-  wishlist          WishlistItem[]
-  cartItems         CartItem[]       @relation("CartItemToProduct")
-  orderItems        OrderItem[]      @relation("OrderItemToProduct")
-  buyers            User[]           @relation("UserPurchasedProducts")
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  priceHistories    PriceHistory[]   @relation("ProductPriceHistory")
-}
+        model Product {
+          id                String           @id @default(cuid())
+          title             String
+          slug              String           @unique
+          description       String?
+          prices     ProductPrice[]
+          subscriptionPlans SubscriptionPlan[]
+          stock             Int              @default(0)
+          image             String?
+          gallery           Json             @default("[]")
+          brand             String?
+          categoryId        String?
+          category          Category?        @relation(fields: [categoryId], references: [id])
+          discountPercent   Int?
+          maxDiscountAmount Json?
+          shippingZoneId    String?
+          shippingCountries Json
+          freeShippingAbove Int?
+          shippingTime      String?
+          pickupLocationId  String?
+          reservedStock    Int       @default(0) // ← جدید: تعداد رزرو شده فعلی
+      stockMovements   StockMovement[]
+      taxRates               TaxRate[]
+      
+          maxPerOrder Int?
+          shippingMethods   ShippingMethod[] @relation("ProductShippingMethods")
+          paymentAccounts   PaymentAccount[] @relation("ProductPaymentAccounts")
+          isActive          Boolean          @default(true)
+          isVisible         Boolean          @default(true)
+          discounts         Discount[]       @relation("ProductDiscounts")
+          tags              Tag[]            @relation("ProductTags")
+          likes Like[] @relation("ProductLikes")
+          reviews Review[] @relation("ProductReviews")
+          comments          Comment[]        @relation("ProductComments")
+          wishlist          WishlistItem[]
+          cartItems         CartItem[]       @relation("CartItemToProduct")
+          orderItems        OrderItem[]      @relation("OrderItemToProduct")
+          buyers            User[]           @relation("UserPurchasedProducts")
+          createdAt         DateTime         @default(now())
+          updatedAt         DateTime         @updatedAt
+          priceHistories    PriceHistory[]   @relation("ProductPriceHistory")
 
-model University {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  shortName String?
-  logo      String?
-  website   String?
-  isActive  Boolean  @default(true)
-  majors    Major[]
-  students  User[]   @relation("UniversityStudents")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
+        savedForLater  CartSavedItem[] @relation("SavedItemToProduct")
 
-model Major {
-  id           String     @id @default(cuid())
-  name         String
-  universityId String
-  university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
-  students     User[]
-  createdAt    DateTime   @default(now())
+      weightGram Int?          // ← جدید: وزن به گرم
+      lengthCm Float?          // طول
+      widthCm Float?           // عرض
+      heightCm Float?          // ارتفاع
+      isFragile Boolean @default(false)
+        }
+        enum StockMovementType {
+    INITIAL       // موجودی اولیه
+    PURCHASE      // خرید از تامین‌کننده
+    SALE          // فروش (checkout)
+    RETURN        // مرجوعی
+    ADJUSTMENT    // تنظیم دستی
+    RESERVE       // رزرو در سبد خرید
+    RELEASE       // آزادسازی رزرو (حذف از سبد یا expire)
+    DAMAGED       // آسیب‌دیده/گم‌شده
+  }
+        model StockMovement {
+    id          String   @id @default(cuid())
+    productId   String
+    product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+    type        StockMovementType
+    quantity    Int // مثبت برای افزایش، منفی برای کاهش
+    reason      String?  // مثلاً "ORDER_123", "RESERVATION_RELEASE", "MANUAL_ADJUST"
+    orderItemId String?
+    orderItem   OrderItem? @relation(fields: [orderItemId], references: [id])
+    cartItemId  String?
+    cartItem    CartItem?  @relation(fields: [cartItemId], references: [id])
+    createdAt   DateTime @default(now())
+    createdById String?
+    createdBy   User?    @relation("StockMovementCreatedBy", fields: [createdById], references: [id])
+    
+    @@index([productId])
+    @@index([type])
+    @@index([createdAt(sort: Desc)])
+  }
+      model ProductPrice {
+        id         String   @id @default(cuid())
+        productId  String
+        product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+        currency   String   // "IRR", "USD", "EUR" ...
+        amount     Int      // مبلغ به کوچک‌ترین واحد (تومان، سنت و ...)
+        isDefault  Boolean  @default(false) // ارز پیش‌فرض برای نمایش
+        createdAt  DateTime @default(now())
+        updatedAt  DateTime @updatedAt
 
-  @@unique([name, universityId])
-}
+        @@unique([productId, currency])
+        @@index([productId])
+        @@index([currency])
+      }
+      model CoursePrice {
+        id         String   @id @default(cuid())
+        courseId   String
+        course     Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        currency   String
+        amount     Int
+        isDefault  Boolean  @default(false)
+        createdAt  DateTime @default(now())
+        updatedAt  DateTime @updatedAt
 
-model AcademicTerm {
-  id        String   @id @default(cuid())
-  title     String
-  year      Int
-  semester  Int
-  startDate DateTime
-  endDate   DateTime
-  isCurrent Boolean  @default(false)
-  courses   Course[]
-  students  User[]
-  createdAt DateTime @default(now())
+        @@unique([courseId, currency])
+        @@index([courseId])
+        @@index([currency])
+      }
+        model University {
+          id        String   @id @default(cuid())
+          name      String   @unique
+          shortName String?
+          logo      String?
+          website   String?
+          isActive  Boolean  @default(true)
+          majors    Major[]
+          students  User[]   @relation("UniversityStudents")
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
+        }
 
-  @@unique([year, semester])
-}
+        model Major {
+          id           String     @id @default(cuid())
+          name         String
+          universityId String
+          university   University @relation(fields: [universityId], references: [id], onDelete: Cascade)
+          students     User[]
+          createdAt    DateTime   @default(now())
 
-// اضافه کن به انتهای schema.prisma
-model Faq {
-  id String @id @default(cuid())
+          @@unique([name, universityId])
+        }
 
-  question String
-  answer   String
+        model AcademicTerm {
+          id        String   @id @default(cuid())
+          title     String
+          year      Int
+          semester  Int
+          startDate DateTime
+          endDate   DateTime
+          isCurrent Boolean  @default(false)
+          students  User[]
+          createdAt DateTime @default(now())
+          courseRuns CourseRun[]
+          @@unique([year, semester])
+        }
 
-  faqableType String
-  faqableId   String
+        model Faq {
+          id String @id @default(cuid())
 
-  order    Int     @default(0)
-  isActive Boolean @default(true)
+          question String
+          answer   String
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+          faqableType String
+          faqableId   String
 
-  @@index([faqableType, faqableId])
-  @@index([isActive])
-  @@index([order])
-}
+          order    Int     @default(0)
+          isActive Boolean @default(true)
 
-model Course {
-  id    String  @id @default(cuid())
-  title String
-  slug  String  @unique
-  code  String?
-  rejectReason    String?
-  // توضیحات و محتوا
-  description      String?
-  shortDescription String?
-  prerequisites    Json    @default("[]") // پیش‌نیازها
-  whatYouWillLearn Json    @default("[]") // آنچه یاد می‌گیرید (لیست بولت)
-  createdById   String?   // اختیاری: اگر null باشه، یعنی قدیمی بوده
-  createdBy     User?     @relation("UserCreatedCourses", fields: [createdById], references: [id])
-  // قیمت و فروش
-  price    Json
-  duration String? // مثلاً "۴۰ ساعت" یا "۱۲ جلسه"
-  units    Int     @default(3)
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
 
-  // نوع و وضعیت
-  type   CourseType   @default(RECORDED) // RECORDED, LIVE, HYBRID
-  status CourseStatus @default(DRAFT) // DRAFT, PUBLISHED, ARCHIVED, ...
+          @@index([faqableType, faqableId])
+          @@index([isActive])
+          @@index([order])
+        }
 
-  // زمان‌بندی
-  termId    String?
-  term      AcademicTerm? @relation(fields: [termId], references: [id])
-  year      Int? // مثلاً ۱۴۰۴
-  startDate DateTime?
-  endDate   DateTime?
-  sections CourseSection[]
-  // مدرس و ظرفیت
-  instructorId      String
-  instructor        User      @relation("InstructorCourses", fields: [instructorId], references: [id])
-  capacity          Int?
-  enrolledCount     Int       @default(0)
-  discountPercent   Int?      @default(0) // مثلاً ۳۰ یعنی ۳۰٪ تخفیف
-  maxDiscountAmount Json? // مثلاً { "IRR": 800000 } → بیشتر از این تخفیف نمی‌خوره
-  discountEndsAt    DateTime?
-  // رسانه
-  image             String?
-  videoPreview      String? // ویدیو پیش‌نمایش (ترجیحاً HLS یا YouTube)
-  gallery           Json      @default("[]")
+        // ==================== جدید: ENUMها برای زبان و سطح دوره ====================
+        enum CourseLanguage {
+          FA // فارسی
+          EN // انگلیسی
+          AR // عربی
+          RU // روسی
+          // می‌تونی بعداً اضافه کنی
+        }
 
-  // فروش و نمایش
-  isSaleEnabled Boolean @default(true)
-  isVisible     Boolean @default(true)
-  featured      Boolean @default(false) // دوره ویژه در صفحه اصلی
-  countries     Json    @default("[]")
+        enum CourseLevel {
+          BEGINNER
+          INTERMEDIATE
+          ADVANCED
+          EXPERT
+        }
+      model CourseAllowedCountry {
+        courseId  String
+        course    Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        countryId String
+        country   Country @relation(fields: [countryId], references: [id], onDelete: Cascade)
 
-  // دسته‌بندی و تگ
-  tags           Tag[]          @relation("CourseTags")
-  categories     Category[]     @relation("CourseCategories")
-  priceHistories PriceHistory[] @relation("CoursePriceHistory")
-  // روابط اصلی
-  groups         CourseGroup[]
-  enrollments    Enrollment[]
-  sessions       ClassSession[]
-  lessons        Lesson[]
-  files          CourseFile[]
-  assignments    Assignment[]
-  exams          Exam[]
-  grades         Grade[]
+        @@unique([courseId, countryId])
+        @@index([countryId])
+        @@index([courseId])
+      }
+        // ==================== آپدیت مدل Course ====================
+      model Course {
+        id               String    @id @default(cuid())
+        title            String
+        slug             String    @unique
+        code             String?
+        rejectReason     String?
+        description      String?
+        shortDescription String?
+        prerequisites   CoursePrerequisite[]   @relation("CoursePrerequisites")
+        learningOutcomes CourseLearningOutcome[] @relation("CourseLearningOutcomes")
+        subscriptionPlans SubscriptionPlan[]
+        discussions     Discussion[]
+        createdById      String?
+        createdBy        User?     @relation("UserCreatedCourses", fields: [createdById], references: [id])
+        ratingAverage    Float?    @default(0)
+        reviewCount      Int       @default(0)
+        language         CourseLanguage @default(FA)
+        level            CourseLevel    @default(BEGINNER)
+        version          Int       @default(1)
+        isDeprecated     Boolean   @default(false)
+        duration         String?
+        isLocked         Boolean   @default(false)
+        lockedBy         String?
+        lockedAt         DateTime?
+        lockExpiresAt    DateTime?
+        type             CourseType @default(RECORDED)
+        status           CourseStatus @default(DRAFT)
+        publishedAt      DateTime?
+        instructorId     String
+        instructor       User      @relation("InstructorCourses", fields: [instructorId], references: [id])
+        coInstructors    User[]    @relation("CourseCoInstructors")
+        runs             CourseRun[]
+        sections         CourseSection[]
+        lessons          Lesson[]
+        files            CourseFile[]
+        assignments      Assignment[]
+        exams            Exam[]
+        prices           CoursePrice[]
+        paymentAccounts  PaymentAccount[] @relation("CoursePaymentAccounts")
+        buyers           User[]    @relation("UserPurchasedCourses")
+        cartItems        CartItem[] @relation("CartItemToCourse")
+        orderItems       OrderItem[] @relation("OrderItemToCourse")
+        categories       Category[] @relation("CourseCategories")
+        tags Tag[] @relation("CourseTags")  
+        discounts        Discount[] @relation("CourseDiscounts")
+        priceHistories   PriceHistory[] @relation("CoursePriceHistory")
+        gradeCategories  GradeCategory[]
+        gradeItems       GradeItem[]
+        certificates     Certificate[]
+        reviews Review[] @relation("CourseReviews")
+        comments         Comment[] @relation("CourseComments")
+        likes Like[] @relation("CourseLikes")
+        certificateRequirement CertificateRequirement?
+        wishlist         WishlistItem[]
+        image            String?
+        videoPreview     String?
+        gallery          Json      @default("[]")
+        isSaleEnabled    Boolean   @default(true)
+        isVisible        Boolean   @default(true)
+        featured         Boolean   @default(false)
+        allowedCountries CourseAllowedCountry[]
+        createdAt        DateTime  @default(now())
+        updatedAt        DateTime  @updatedAt
+        requiresSequential Boolean @default(false) 
+        creditUnits Int @default(3) 
+        gradingEnabled       Boolean  @default(true)
+        finalScoreOutOf      Float    @default(100) 
+        passingScore         Float?   
+        totalEnrolled Int @default(0) 
+        totalRevenue  BigInt @default(0)
+        recommendedSemester Int?      
+        targetYear          Int?     
+        courseId String?
+        savedForLater  CartSavedItem[] @relation("SavedItemToCourse")
+        @@index([totalEnrolled(sort: Desc)])
+        @@index([totalRevenue(sort: Desc)]) 
+        @@index([id, gradingEnabled])
+        @@index([requiresSequential])
+        @@index([status, instructorId])
+        @@index([ratingAverage(sort: Desc)])
+        @@index([instructorId, status])
+        @@index([language, level])
+        @@index([instructorId, language])
+        @@index([status, publishedAt(sort: Desc)])
+        @@index([slug])
+        @@index([status])
+        @@index([type])
+        @@index([instructorId])
+        @@index([featured])
+        @@index([isVisible])
+        @@index([createdAt])
+        @@index([publishedAt])
+        @@index([language])
+        @@index([level])
+        @@index([isLocked])
+        @@index([instructorId, isLocked])
+      }
 
-  // پرداخت و سفارش
-  paymentAccounts PaymentAccount[] @relation("CoursePaymentAccounts")
-  buyers          User[]           @relation("UserPurchasedCourses")
-  cartItems       CartItem[]       @relation("CartItemToCourse")
-  orderItems      OrderItem[]      @relation("OrderItemToCourse")
+      // ==================== برگزاری یک دوره در یک ترم/سال خاص (CourseRun) ====================
+      // ==================== برگزاری یک دوره در یک ترم/سال خاص (CourseRun) ====================
+      model CourseRun {
+        id                   String    @id @default(cuid())
+        courseId             String
+        course               Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        titleOverride        String?
+        slug                 String    @unique
+        year                 Int
+        termId               String?
+        notifications Notification[] @relation("RunNotifications")  
+        term                 AcademicTerm? @relation(fields: [termId], references: [id])
+        startDate            DateTime
+        endDate              DateTime
+        enrollmentDeadline   DateTime?
+        capacity             Int?
+        enrolledCount        Int       @default(0)
+        isActive             Boolean   @default(true)
+        groups               CourseGroup[]
+        sessions             ClassSession[]
+        enrollments          Enrollment[] @relation("RunEnrollments")
+        status CourseRunStatus @default(UPCOMING)
+        discussions Discussion[]  
+        assignments          Assignment[] @relation("RunAssignments")
+        exams                Exam[]       @relation("RunExams")
 
-  // نظرات و تعامل
-  reviews      Review[]
-  comments     Comment[]      @relation("CourseComments")
-  likes        Like[]
-  wishlist     WishlistItem[]
-  certificates Certificate[]
+        createdAt            DateTime  @default(now())
+        updatedAt            DateTime  @updatedAt
+        @@index([status])
+        @@index([status, startDate])
+        @@unique([courseId, year, termId])
+        @@index([courseId])
+        @@index([year])
+        @@index([startDate])
+        @@index([endDate])
+        @@index([isActive])
+        @@index([slug])
+      }
+      enum CourseRunStatus {
+        UPCOMING   // هنوز شروع نشده
+        ONGOING    // در حال برگزاری
+        FINISHED   // تمام شده
+        CANCELLED  // لغو شده
+      }
+        // ==================== جدید: جدول LessonProgress ====================
+        model LessonProgress {
+        id              String @id @default(cuid())
+        userId          String
+        user            User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+        lessonId        String
+        lesson          Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+        progressPercent Int    @default(0)
+        lastPosition    Int?
+        completed       Boolean @default(false)
+        completedAt     DateTime?
+        updatedAt       DateTime @updatedAt
 
-  // تاریخ‌ها
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  publishedAt DateTime? // وقتی منتشر شد
-  isLocked    Boolean   @default(false)  // جدید: اگر true باشد، حتی استاد هم نمی‌تواند ویرایش کند
-  lockedBy    String?   // اختیاری: ID ادمینی که قفل کرده
-  lockedAt    DateTime? // زمان قفل شدن
+        @@unique([userId, lessonId])
+        @@index([userId])
+        @@index([lessonId])
+        @@index([completed])
+      }
 
-  // ایندکس برای جستجوهای سریع
-  @@index([isLocked])
-  @@index([instructorId, isLocked])
-  // ایندکس‌ها برای سرعت
-  @@index([slug])
-  @@index([status])
-  @@index([type])
-  @@index([instructorId])
-  @@index([termId])
-  @@index([featured])
-  @@index([isVisible])
-  @@index([createdAt])
-  @@index([publishedAt])
-}
+      model GradeCategory {
+        
+        affectsFinalGrade    Boolean  @default(true)
+        id        String   @id @default(cuid())
+        courseId  String
+        course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        title     String
+        weight    Float    @default(1.0)
+        maxScore  Float?
+        order     Int      @default(0)
+        createdAt DateTime @default(now())
+        items     GradeItem[]
 
-model CourseGroup {
-  id           String              @id @default(cuid())
-  courseId     String
-  course       Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title        String
-  color        String              @default("#3B82F6")
-  capacity     Int?
-  enrolled     Int                 @default(0)
-  instructorId String?
-  instructor   User?               @relation("GroupInstructor", fields: [instructorId], references: [id])
-  assistantId  String?
-  assistant    User?               @relation("GroupAssistant", fields: [assistantId], references: [id])
-  meetLink     String?
-  schedule     String?
-  members      CourseGroupMember[]
-  sessions     ClassSession[]
-  files        CourseFile[]
-  assignments  Assignment[]
-  enrollments  Enrollment[] // اضافه شد برای relation دوطرفه با Enrollment
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-}
-model CourseSection {
-  id          String   @id @default(cuid())
-  courseId    String
-  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title       String
-  description String?
-  content     String?   // محتوای متنی سرفصل (مقدمه، توضیحات و ...)
-  order       Int
+        @@unique([courseId, title])
+        @@index([courseId])
+      }
+        // نمره جزئی هر دانشجو در هر دسته
+      model GradeItem {
+        id         String        @id @default(cuid())
+        categoryId String
+        category   GradeCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+        userId     String
+        user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+        courseId   String
+        course     Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        score      Float?
+        maxScore   Float?
+        feedback   String?
+        gradedAt   DateTime?
+        createdAt  DateTime      @default(now())
 
-  lessons     Lesson[]
+        @@unique([categoryId, userId])
+        @@index([userId])
+        @@index([categoryId])
+        @@index([courseId])
+      }
+
+
+      model CourseGroup {
+        id                  String                  @id @default(cuid())
+        runId               String?
+        run                 CourseRun? @relation(fields: [runId], references: [id])
+        title               String
+        description         String?
+        color               String                  @default("#3B82F6")
+        capacity            Int?
+        enrolled            Int                     @default(0)
+        startDate           DateTime?
+        endDate             DateTime?
+        isActive            Boolean                 @default(true)
+        enrollmentLimitType EnumGroupEnrollmentType @default(OPEN)
+        instructorId        String?
+        instructor          User?                   @relation("GroupInstructor", fields: [instructorId], references: [id])
+        notifications       Notification[]          @relation("GroupNotifications")
+        assistants          User[]                  @relation("GroupAssistants")
+        meetLink            String?
+        schedule            String?
+      members CourseGroupMember[]
+        sessions ClassSession[]
+        files CourseFile[]
+        enrollments Enrollment[]
+
+        createdAt           DateTime @default(now())
+        updatedAt           DateTime @updatedAt
+
+        @@index([isActive])
+        @@index([startDate])
+        @@index([endDate])
+        @@index([enrollmentLimitType])
+      }
+        enum EnumGroupEnrollmentType {
+          OPEN // همه می‌تونن ثبت‌نام کنن
+          APPROVAL_REQUIRED // نیاز به تأیید مدرس
+          INVITE_ONLY // فقط با دعوت
+        }
+
+        model CourseSection {
+          id          String  @id @default(cuid())
+          courseId    String
+          course      Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+          title       String
+          description String?
+          content     String? // محتوای متنی سرفصل (مقدمه، توضیحات و ...)
+          order       Int
+
+          lessons Lesson[]
+
+          // جدید: فایل‌های مستقیم متعلق به این سرفصل
+          files CourseFile[]
+
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
+
+          @@index([courseId])
+          @@index([order])
+        }
+
+        model CourseGroupMember {
+          id       String      @id @default(cuid())
+          userId   String
+          user     User        @relation(fields: [userId], references: [id])
+          groupId  String
+          group    CourseGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+          role     GroupRole   @default(STUDENT)
+          joinedAt DateTime    @default(now())
+
+          @@unique([userId, groupId])
+        }
+
+        model ClassSession {
+          id       String       @id @default(cuid())
+          groupId  String?
+          group    CourseGroup? @relation(fields: [groupId], references: [id])
+          runId    String?
+          run      CourseRun? @relation(fields: [runId], references: [id])
+          title String
+          type  SessionType @default(LIVE_CLASS)
+          notifications Notification[] @relation("SessionNotifications")  // ← اضافه شد
+          startTime DateTime
+          endTime   DateTime
+
+          meetLink String?
+
+          recordingLink String?
+
+          isRecorded Boolean @default(false)
+
+        platform     String            @default("jitsi") // jitsi, zoom, google_meet, bigbluebutton, custom
+        roomId       String?           // ID اتاق در پلتفرم
+        roomPassword String?
+        externalUrl  String?           // برای پلتفرم‌هایی که لینک مستقیم می‌دهند
+
+          roomStatus RoomStatus? @default(PENDING)
+
+          attendances SessionAttendance[]
+
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
+        currentViewers Int @default(0)
+        peakViewers    Int @default(0)
+          @@index([startTime])
+        @@index([platform])
+        }
+
+        enum RoomStatus {
+          PENDING
+          ACTIVE
+          ENDED
+          FAILED
+        }
+      model CertificateRequirement {
+        id        String @id @default(cuid())
+        courseId  String
+        course    Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+        requireAllLessons      Boolean @default(true) // آیا همه دروس اجباری هستن؟
+        requireQuizPassing     Boolean @default(false) // آیا همه کوئیزها باید پاس بشن؟
+        requireAssignments     Boolean @default(false) // آیا همه تکالیف باید ارسال/پاس بشن؟
+        requireExams           Boolean @default(false) // آیا همه آزمون‌ها باید پاس بشن؟
+        minFinalScore           Float?   @default(70)  // از Enrollment.finalScore
+        minCompletionPercentage Int?    @default(90)
+        requireAllAssignments   Boolean @default(false)
+        requireAllExamsPassed   Boolean @default(true)
+        minAttendancePercentage Int?
+        createdAt DateTime @default(now())
+        updatedAt DateTime @updatedAt
+
+        @@unique([courseId]) // هر دوره فقط یک مجموعه الزامات داره
+        @@index([courseId])
+      }
+      model SessionAttendance {
+        id        String            @id @default(cuid())
+        sessionId String
+        session   ClassSession      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+        userId    String
+        user      User              @relation(fields: [userId], references: [id])
+        status    AttendanceStatus
+        joinedAt  DateTime?
+        leftAt    DateTime?
+
+        grade     SessionAttendanceGrade?
+
+        @@unique([sessionId, userId])
+      }
+
+        // ==================== سیستم تکالیف (Assignments) ====================
+      model Assignment {
+        id          String       @id @default(cuid())
+        courseId    String
+        course      Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        maxAttempts Int? @default(1)
+        runId   String?
+        run     CourseRun? @relation("RunAssignments", fields: [runId], references: [id])
+        attemptOverrides AssignmentAttemptOverride[] 
+        rubrics AssignmentRubric[] 
+        title       String
+        description String?
+        instructions String?
+        dueDate     DateTime?
+        latePenalty Float?       @default(0)
+        maxScore    Float        @default(20)
+        type        AssignmentType @default(TEXT_AND_FILE)
+        isPublished Boolean      @default(false)
+        publishedAt DateTime?
+        submissions AssignmentSubmission[]
+        createdAt   DateTime     @default(now())
+        updatedAt   DateTime     @updatedAt
+
+        @@index([courseId])
+        @@index([runId])      // جدید
+        @@index([dueDate])
+        @@index([isPublished])
+      }
+      model AssignmentAttemptOverride {
+        id              String    @id @default(cuid())
+        assignmentId    String
+        assignment      Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+        userId          String
+        user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+        allowedAttempts Int
+        reason          String?
+        setById         String?
+        setBy           User?     @relation("OverrideSetBy", fields: [setById], references: [id])
+        createdAt       DateTime  @default(now())
+
+        @@unique([assignmentId, userId])
+        @@index([assignmentId])
+        @@index([userId])
+      }
+        enum AssignmentType {
+          TEXT_ONLY // فقط متن
+          FILE_ONLY // فقط فایل
+          TEXT_AND_FILE // متن + فایل
+          MULTIPLE_FILES // چند فایل
+        }
+
+        // ارسال تکلیف توسط دانشجو
+      model AssignmentSubmission {
+        id            String                @id @default(cuid())
+        assignmentId  String
+        assignment    Assignment            @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+        userId        String
+        user          User                  @relation("AssignmentSubmissions", fields: [userId], references: [id], onDelete: Cascade)
+        text          String?
+        files         AssignmentSubmissionFile[]
+        attemptNumber Int                   @default(1)
+        score         Float?
+        feedback      String?
+        gradedAt      DateTime?
+        submittedAt   DateTime              @default(now())
+        isLate        Boolean               @default(false)
+        rubricScores AssignmentRubricScore[]
+        grade         AssignmentGrade?
+
+        @@unique([assignmentId, userId])
+        @@index([assignmentId])
+        @@index([userId])
+        @@index([submittedAt])
+        @@index([score])
+      }
+      enum RubricCriterionType {
+        POINTS     // امتیاز عددی
+        SCALE      // مقیاس (مثل ۱-۵)
+        CHECKLIST  // چک‌لیست (دارد/ندارد)
+      }
+
+      model AssignmentRubric {
+        id          String    @id @default(cuid())
+        assignmentId String
+        assignment  Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+        title       String
+        description String?
+        maxScore    Float
+        type        RubricCriterionType @default(POINTS)
+        order       Int
+        createdAt   DateTime  @default(now())
+        scores      AssignmentRubricScore[]  
+        @@index([assignmentId])
+        @@index([order])
+      }
+      model AssignmentSubmissionFile {
+        id           String              @id @default(cuid())
+        submissionId String
+        submission   AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+        url          String
+        filename     String
+        size         Int?
+        type         String? // mime type
+        createdAt    DateTime            @default(now())
+
+        @@index([submissionId])
+      }
+      model Exam {
+        id         String   @id @default(cuid())
+        courseId   String
+        course     Course   @relation(fields: [courseId], references: [id])
+
+        // جدید: اختیاری — آزمون مخصوص یک برگزاری خاص
+      runId   String?
+        run     CourseRun? @relation("RunExams", fields: [runId], references: [id])
+
+        title      String
+        startTime  DateTime
+        endTime    DateTime
+        duration   Int      // دقیقه
+        totalScore Float
+        shuffleQuestions     Boolean @default(true)
+        oneQuestionAtATime   Boolean @default(true)
+        preventBacktracking  Boolean @default(true)
+        timeLimitPerQuestion Int?
+        questions  ExamQuestion[]
+        attempts   ExamAttempt[]
+        passingScore Float   @default(70) // حداقل نمره برای پاس شدن (از totalScore)
+        maxAttempts  Int?    @default(1)
+        @@index([passingScore])
+        @@index([courseId])
+        @@index([runId])      // جدید
+      }
+
+        model ExamQuestion {
+          id            String  @id @default(cuid())
+          examId        String
+          exam          Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
+          text          String
+          type          String
+          options       Json?
+          correctAnswer String?
+          score         Float
+        }
+
+      model ExamAttempt {
+        id          String    @id @default(cuid())
+        examId      String
+        exam        Exam      @relation(fields: [examId], references: [id])
+        userId      String
+        user        User      @relation("ExamAttempts", fields: [userId], references: [id])
+        answers     Json
+        score       Float?
+        startedAt   DateTime  @default(now())
+        submittedAt DateTime?
+
+        grade       ExamGrade?
+
+      }
+
+        enum FileAccessLevel {
+          FREE // همه می‌تونن ببینن (حتی بدون ثبت‌نام)
+          ENROLLED // فقط کسانی که ثبت‌نام کردن (enrollment دارن)
+          PURCHASED // فقط کسانی که خرید کردن (در buyers هستن)
+          INSTRUCTOR // فقط مدرس و ادمین
+        }
+
+        // ==================== مدل جدید برای نقش‌ها ====================
+        model UserRole {
+          id         String   @id @default(cuid())
+          userId     String
+          user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+          role       String // مثلاً "USER", "STUDENT", "BUYER", "INSTRUCTOR", "BLOGGER", "SELLER", "ADMIN"
+          assignedAt DateTime @default(now())
+          assignedBy String? // اختیاری: کی این نقش رو داده (برای ادمین)
+
+          @@unique([userId, role]) // یک کاربر فقط یک بار یک نقش رو داشته باشه
+          @@index([userId])
+          @@index([role])
+        }
+
+        // ==================== آپدیت مدل User ====================
+      model User {
+        skills              Json?     // یا String[] اگر Prisma از array پشتیبانی کند
+    interests           Json?     // یا String[]
+    profileVisibility   String @default("PUBLIC") // "PUBLIC" | "PRIVATE" | "FRIENDS_ONLY"
+    showEmail           Boolean @default(false)
+    showPhone           Boolean @default(false)
+    notificationPreferences NotificationPreference[]
+    notifications Notification[] @relation("UserNotifications")
+    notificationRateLimits   NotificationRateLimit[] @relation("RateLimitUpdatedBy")
+    createdScheduledNotifications ScheduledNotification[]  
+    telegram            String?
+    whatsapp            String?
+    contactEmail        String?
+    contactPhone        String?
+    showContactInfo     Boolean @default(false)
+    github String?
+    changedPostVersions PostVersion[] @relation("PostVersionChangedBy")
+referralsMade   Referral[] @relation("UserReferralsMade")
+  referralsReceived Referral[] @relation("UserReferredBy")
   
-  // جدید: فایل‌های مستقیم متعلق به این سرفصل
-  files       CourseFile[]
+  leaderboardEntries ReferralLeaderboard[]
+  createdNewsletters Newsletter[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  blogSubscriptions BlogSubscription[]
+    graduationYear      Int?
+    expertise    String?          
+    lastLoginAt  DateTime?       
+    deletedAt    DateTime?   
+    roleHistory       UserRoleHistory[]
+    roleChangesMade   UserRoleHistory[] @relation("RoleChangeBy")
+    academicStatus      AcademicStatus @default(ACTIVE)
+    id                   String    @id @default(cuid())
+    unreadNotificationsCount Int @default(0)
+    name                 String
+    email                String    @unique
+    emailVerified        DateTime? // تاریخ تأیید ایمیل (به جای boolean جداگانه)
+    phone                String?   @unique
+    password             String
+    image                String?
+    gender               Gender    @default(OTHER)
+    birthDate            DateTime?
+    bio                  String?
+    city                 String?
+    instagram            String?
+    jwtVersion           Int       @default(0)
+    universityId         String?
+    university           University? @relation("UniversityStudents", fields: [universityId], references: [id])
+    majorId              String?
+    major                Major?    @relation(fields: [majorId], references: [id])
+    studentId            String?   @unique
+    entranceYear         Int?
+    currentTermId        String?
+    currentTerm          AcademicTerm? @relation(fields: [currentTermId], references: [id])
+    preferredLocale      String    @default("fa")
+    shortBio             String?
+    website              String?
+    twitter              String?   // بدون @
+    linkedin             String?
+    isBanned             Boolean   @default(false)
+    createdCourses       Course[]  @relation("UserCreatedCourses")
+    roles                UserRole[]
+    lessonProgress       LessonProgress[]
+    gradeItems           GradeItem[]
+    passwordResetTokens  PasswordResetToken[]
+    withdrawalRequests   WithdrawalRequest[] @relation("InstructorWithdrawalRequests")
+    earnings             InstructorEarning? @relation("InstructorEarnings")
+    vendorEarning        VendorEarning? @relation("VendorEarnings")
+    paymentAccounts      PaymentAccount[] @relation("InstructorPaymentAccounts")
+    taughtCourses        Course[]  @relation("InstructorCourses")
+    groupInstructors     CourseGroup[] @relation("GroupInstructor")
+    assistedGroups       CourseGroup[] @relation("GroupAssistants")
+    downloadedFiles      FileDownload[] @relation("UserFileDownloads")
+    enrollments          Enrollment[]
+    createdDiscounts     Discount[] @relation("CreatedDiscounts")
+    sentNotifications    Notification[] @relation("SentNotifications")
+    gradedAssignments    AssignmentGrade[]
+    stockMovements       StockMovement[] @relation("StockMovementCreatedBy")
+    groupMemberships     CourseGroupMember[]
+    sessionsAttended     SessionAttendance[]
+    uploadedFiles        CourseFile[]
+    assignmentSubmissions AssignmentSubmission[] @relation("AssignmentSubmissions")
+    examAttempts         ExamAttempt[] @relation("ExamAttempts")
+    subscriptions        Subscription[]
+    carts                Cart[]
+    sharedCarts          CartShare[] @relation("SharedCarts")
+    orders               Order[]
+    purchasedCourses     Course[] @relation("UserPurchasedCourses")
+    purchasedProducts    Product[] @relation("UserPurchasedProducts")
+    reviews              Review[]
+    wishlist             WishlistItem[]
+    
+    tickets              Ticket[]
+    likes                Like[]
+    discountUsages       DiscountUsage[] @relation("UserDiscountUsages")
+    activityLogs         ActivityLog[]
+    certificates         Certificate[] @relation("UserCertificates")
+    reviewReactions      ReviewReaction[]
+    posts                Post[]
+    comments             Comment[]
+    completedLessons     LessonCompletion[]
+    coTaughtCourses      Course[] @relation("CourseCoInstructors")
+    verificationTokens   VerificationToken[]
+    enrollmentsCreated   Enrollment[] @relation("EnrolledBy")
+    lessonViews          LessonView[]
+    assignmentAttemptOverrides     AssignmentAttemptOverride[]
+    setAssignmentAttemptOverrides  AssignmentAttemptOverride[] @relation("OverrideSetBy")
+    addresses            UserAddress[]
+    quizAttempts         QuizAttempt[] @relation("QuizAttempts")
+    discussionPosts      DiscussionPost[] @relation("DiscussionPosts")
+    createdDiscussions   Discussion[] @relation("CreatedDiscussions")
+    discussionReactions  DiscussionPostReaction[]
+    discussionSubscriptions DiscussionSubscription[]
+    savedPaymentMethods  SavedPaymentMethod[]
+    soldOrderItems       OrderItem[] @relation("OrderItemSeller")
+    soldCartItems        CartItem[] @relation("CartItemSeller")
+    refundRequests       RefundRequest[]
+    returnRequests       ReturnRequest[]
+    wallet               UserWallet? @relation("UserWallet")
 
-  @@index([courseId])
-  @@index([order])
-}
-model CourseGroupMember {
-  id       String      @id @default(cuid())
-  userId   String
-  user     User        @relation(fields: [userId], references: [id])
-  groupId  String
-  group    CourseGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  role     GroupRole   @default(STUDENT)
-  joinedAt DateTime    @default(now())
+    // فیلدهای جدید پیشنهادی
+    timezone             String?   @default("Asia/Tehran") // برای زمان‌بندی دقیق کلاس‌ها و نوتیفیکیشن
+  
+    loginCount           Int       @default(0)
+    referralCode         String?   @unique // کد ریفرال منحصر به فرد کاربر
+    referredById         String?   // کاربری که این کاربر را معرفی کرده
+    referredBy           User?     @relation("UserReferrals", fields: [referredById], references: [id])
+    referrals            User[]    @relation("UserReferrals") // کاربرانی که با کد این کاربر ثبت‌نام کرده‌اند
 
-  @@unique([userId, groupId])
-}
+    createdAt            DateTime  @default(now())
+    updatedAt            DateTime  @updatedAt
+    isActive             Boolean   @default(true)
+    createdCertificateTemplates CertificateTemplate[] @relation("CreatedCertificateTemplates")
+  
 
-model ClassSession {
-  id            String              @id @default(cuid())
-  courseId      String
-  course        Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  groupId       String?
-  group         CourseGroup?        @relation(fields: [groupId], references: [id])
-  title         String
-  type          SessionType         @default(LIVE_CLASS)
-  startTime     DateTime
-  endTime       DateTime
-  meetLink      String?
-  recordingLink String?
-  isRecorded    Boolean             @default(false)
-  attendances   SessionAttendance[]
-  createdAt     DateTime            @default(now())
-  zegoRoomId    String?   // ← این رو اضافه کن — برای Zego
-}
+    @@index([email])
+    @@index([phone])
+    @@index([isActive])
+    @@index([isBanned])
+    @@index([academicStatus])
+    @@index([createdAt(sort: Desc)])
+    @@index([deletedAt])
+    @@index([timezone])
+    @@index([referralCode])
+    @@index([referredById])
+  }
 
-model SessionAttendance {
-  id        String           @id @default(cuid())
-  sessionId String
-  session   ClassSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User             @relation(fields: [userId], references: [id])
-  status    AttendanceStatus
-  joinedAt  DateTime?
-  leftAt    DateTime?
+  model UserWallet {
+    id        String   @id @default(cuid())
+    userId    String   @unique
+    user      User     @relation("UserWallet", fields: [userId], references: [id], onDelete: Cascade)
+    balance   BigInt   @default(0) // به کوچک‌ترین واحد ارز (مثل تومان یا سنت)
+    currency  String   @default("IRR")
+    transactions WalletTransaction[]
+    withdrawalRequests WalletWithdrawalRequest[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    @@index([userId])
+    @@index([currency])
+  }
+  model WalletTransaction {
+    id          String   @id @default(cuid())
+    walletId    String
+    wallet      UserWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+    type        WalletTransactionType
+    amount      BigInt   // مثبت برای افزایش، منفی برای کاهش
+    currency    String   @default("IRR")
+    description String?
+    referenceId String?  // مثلاً orderId, refundId, topup payment ref
+    orderId     String?
+    order       Order?   @relation(fields: [orderId], references: [id])
+    createdAt   DateTime @default(now())
+    @@index([walletId])
+    @@index([type])
+    @@index([orderId])
+    @@index([createdAt(sort: Desc)])
+  }
+  enum WalletTransactionType {
+    TOPUP           // شارژ کیف پول
+    PAYMENT         // پرداخت از کیف پول
+    REFUND          // بازگشت وجه به کیف پول
+    WITHDRAWAL      // برداشت به حساب بانکی
+    ADJUSTMENT      // تنظیم دستی توسط ادمین
+    GIFT            // هدیه از سیستم
+  }
+  model WalletWithdrawalRequest {
+    id         String   @id @default(cuid())
+    walletId   String
+    wallet     UserWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+    amount     BigInt
+    currency   String   @default("IRR")
+    method     String   // bank_transfer, crypto, etc.
+    details    Json     // iban, wallet address, etc.
+    status     WithdrawalStatus @default(PENDING)
+    requestedAt DateTime @default(now())
+    processedAt DateTime?
+    processedBy String?
+    note       String?
+    @@index([walletId])
+    @@index([status])
+  }
+  model RefundRequest {
+    id          String   @id @default(cuid())
+    orderId     String
+    order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    userId      String
+    user        User     @relation(fields: [userId], references: [id])
+    reason      String
+    amount      Int      // مبلغ درخواستی بازگشت (برای partial)
+    currency    String   @default("IRR")
+    status      RefundStatus @default(PENDING)
+    items       RefundItem[] // برای مشخص کردن کدام آیتم‌ها
+    approvedBy  String?
+    approvedAt  DateTime?
+    processedAt DateTime?
+    note        String?
+    returnRequests         ReturnRequest[]
+    
+    createdAt   DateTime @default(now())
+    @@index([orderId])
+    @@index([userId])
+    @@index([status])
+  }
+  enum RefundStatus {
+    PENDING
+    APPROVED
+    REJECTED
+    PROCESSED
+    FAILED
+  }
+  model RefundItem {
+    id            String   @id @default(cuid())
+    refundId      String
+    refund        RefundRequest @relation(fields: [refundId], references: [id], onDelete: Cascade)
+    orderItemId   String
+    orderItem     OrderItem @relation(fields: [orderItemId], references: [id])
+    quantity      Int
+    amount        Int
+    currency      String   @default("IRR")
+    restock       Boolean  @default(true) // آیا موجودی برگردد؟
+    @@unique([refundId, orderItemId])
+    @@index([refundId])
+    @@index([orderItemId])
+  }
+  model ReturnRequest {
+    id            String          @id @default(cuid())
+    refundId      String?
+    refund        RefundRequest?  @relation(fields: [refundId], references: [id])
+    orderId       String
+    order         Order           @relation(fields: [orderId], references: [id])
+    userId        String          // ← این فیلد را اضافه کنید
+    user          User            @relation(fields: [userId], references: [id])  // ← و این رابطه
+    trackingCode  String?
+    status        ReturnStatus    @default(PENDING)
+    images        Json?
+    note          String?
+    createdAt     DateTime        @default(now())
 
-  @@unique([sessionId, userId])
-}
+    @@index([orderId])
+    @@index([status])
+    @@index([userId])  // اختیاری، برای جستجوی سریع
+  }
 
-model CourseFile {
-  id             String       @id @default(cuid())
-  courseId       String
-  course         Course       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  enum ReturnStatus {
+    PENDING
+    RECEIVED
+    INSPECTED
+    APPROVED
+    REJECTED
+  }
+    // مدل جدید: موقت برای تخصیص آدرس و روش ارسال به هر آیتم سبد خرید
+    model CartItemShippingAssignment {
+      id               String          @id @default(cuid())
+      cartItemId       String          @unique
+      cartItem         CartItem        @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+      addressId        String?
+      address          UserAddress?    @relation("CartItemShippingAddress", fields: [addressId], references: [id])
+      temporaryAddress Json?
+      shippingMethodId String?
+      shippingMethod   ShippingMethod? @relation("CartItemShippingMethods", fields: [shippingMethodId], references: [id])
+      shippingCost     Int             @default(0)
+      createdAt        DateTime        @default(now())
+      updatedAt        DateTime        @updatedAt
 
-  // اختیاری: فایل متعلق به گروه
-  groupId        String?
-  group          CourseGroup? @relation(fields: [groupId], references: [id])
-
-  // جدید: فایل متعلق به سرفصل
-  sectionId      String?
-  section        CourseSection? @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-
-  title          String
-  url            String
-  type           String       // مثلاً "pdf", "zip", "video", ...
-  size           Int?         // بایت
-  uploadedBy     String
-  uploadedByUser User         @relation(fields: [uploadedBy], references: [id])
-
-  createdAt      DateTime     @default(now())
-
-  @@index([courseId])
-  @@index([groupId])
-  @@index([sectionId])     // ایندکس جدید برای جستجوی سریع
-  @@index([uploadedBy])
-}
-
-model Assignment {
-  id          String                 @id @default(cuid())
-  courseId    String
-  course      Course                 @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  groupId     String?
-  group       CourseGroup?           @relation(fields: [groupId], references: [id])
-  title       String
-  description String?
-  dueDate     DateTime
-  maxScore    Float
-  submissions AssignmentSubmission[]
-  createdAt   DateTime               @default(now())
-}
-
-model AssignmentSubmission {
-  id           String     @id @default(cuid())
-  assignmentId String
-  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
-  userId       String
-  user         User       @relation("AssignmentSubmissions", fields: [userId], references: [id])
-  fileUrl      String?
-  text         String?
-  score        Float?
-  feedback     String?
-  submittedAt  DateTime   @default(now())
-  gradedAt     DateTime?
-
-  @@unique([assignmentId, userId])
-}
-
-model Exam {
-  id         String         @id @default(cuid())
-  courseId   String
-  course     Course         @relation(fields: [courseId], references: [id])
-  title      String
-  startTime  DateTime
-  endTime    DateTime
-  duration   Int // دقیقه
-  totalScore Float
-  questions  ExamQuestion[]
-  attempts   ExamAttempt[]
-}
-
-model ExamQuestion {
-  id            String  @id @default(cuid())
-  examId        String
-  exam          Exam    @relation(fields: [examId], references: [id], onDelete: Cascade)
-  text          String
-  type          String
-  options       Json?
-  correctAnswer String?
-  score         Float
-}
-
-model ExamAttempt {
-  id          String    @id @default(cuid())
-  examId      String
-  exam        Exam      @relation(fields: [examId], references: [id])
-  userId      String
-  user        User      @relation("ExamAttempts", fields: [userId], references: [id])
-  answers     Json
-  score       Float?
-  startedAt   DateTime  @default(now())
-  submittedAt DateTime?
-}
-
-model Grade {
-  id       String   @id @default(cuid())
-  userId   String
-  user     User     @relation(fields: [userId], references: [id])
-  courseId String
-  course   Course   @relation(fields: [courseId], references: [id])
-  midterm  Float?
-  final    Float?
-  activity Float?
-  project  Float?
-  total    Float?
-  letter   String?
-  passed   Boolean?
-
-  @@unique([userId, courseId])
-}
-
-// ==================== مدل جدید برای نقش‌ها ====================
-model UserRole {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role       String // مثلاً "USER", "STUDENT", "BUYER", "INSTRUCTOR", "BLOGGER", "SELLER", "ADMIN"
-  assignedAt DateTime @default(now())
-  assignedBy String? // اختیاری: کی این نقش رو داده (برای ادمین)
-
-  @@unique([userId, role]) // یک کاربر فقط یک بار یک نقش رو داشته باشه
-  @@index([userId])
-  @@index([role])
-}
-
-// ==================== آپدیت مدل User ====================
-model User {
-  id            String    @id @default(cuid())
-  name          String
-  email         String    @unique
-  emailVerified DateTime?
-  phone         String?   @unique
-  password      String
-  image         String?
-  gender        Gender    @default(OTHER)
-  birthDate     DateTime?
-  bio           String?
-  city          String?
-  instagram     String?
-  jwtVersion      Int       @default(0)
-  universityId   String?
-  university     University?    @relation("UniversityStudents", fields: [universityId], references: [id])
-  majorId        String?
-  major          Major?         @relation(fields: [majorId], references: [id])
-  studentId      String?        @unique
-  entranceYear   Int?
-  currentTermId  String?
-  currentTerm    AcademicTerm?  @relation(fields: [currentTermId], references: [id])
-  academicStatus AcademicStatus @default(ACTIVE)
-  preferredLocale  String              @default("fa") // ← اضافه شد
-  shortBio      String?   // بیوگرافی کوتاه برای نمایش در کارت پست‌ها
-  website       String?   // وب‌سایت شخصی
-  twitter       String?   // توییتر/X (بدون @)
-  linkedin      String?
-  isBanned        Boolean @default(false)
-  isEmailVerified Boolean @default(false)
-  createdCourses Course[] @relation("UserCreatedCourses")
-  roles UserRole[]
-
-  // بقیه روابط همون قبلی
-  passwordResetTokens   PasswordResetToken[]
-  paymentAccounts       PaymentAccount[]       @relation("InstructorPaymentAccounts")
-  taughtCourses         Course[]               @relation("InstructorCourses")
-  groupInstructors      CourseGroup[]          @relation("GroupInstructor")
-  groupAssistants       CourseGroup[]          @relation("GroupAssistant")
-  enrollments           Enrollment[]
-  groupMemberships      CourseGroupMember[]
-  sessionsAttended      SessionAttendance[]
-  grades                Grade[]
-  uploadedFiles         CourseFile[]
-  assignmentSubmissions AssignmentSubmission[] @relation("AssignmentSubmissions")
-  examAttempts          ExamAttempt[]          @relation("ExamAttempts")
-  cart                  Cart?
-  orders                Order[]
-  purchasedCourses      Course[]               @relation("UserPurchasedCourses")
-  purchasedProducts     Product[]              @relation("UserPurchasedProducts")
-  reviews               Review[]
-  wishlist              WishlistItem[]
-  notifications         Notification[]
-  tickets               Ticket[]
-  likes                 Like[]
-  discountUsages        DiscountUsage[]        @relation("UserDiscountUsages")
-  activityLogs          ActivityLog[]
-  certificates          Certificate[]          @relation("UserCertificates")
-  reviewReactions       ReviewReaction[]
-  posts                 Post[]
-  comments              Comment[]
-  completedLessons      LessonCompletion[]
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  isActive              Boolean                @default(true)
-  deletedAt     DateTime?
-  @@index([academicStatus])
-  verificationTokens VerificationToken[]
-}
+      @@index([cartItemId])
+      @@index([addressId])
+      @@index([shippingMethodId])
+    }
+  enum CartOwnerType {
+    USER    
+    GUEST   
+  }
 
 model Cart {
-  id        String     @id @default(cuid())
-  userId    String     @unique
-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items     CartItem[]
-  updatedAt DateTime   @updatedAt
-}
+ orderId String? @unique
+  id                      String                        @id @default(cuid())
+  userId                  String?
+  user                    User?                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  guestToken              String?                       @unique
+  ownerType               CartOwnerType                 @default(GUEST)
+  shares                  CartShare[]
+  savedPaymentMethodId    String?
+  savedPaymentMethod      SavedPaymentMethod?           @relation("CartSavedPaymentMethod", fields: [savedPaymentMethodId], references: [id])
 
+  // ==== بهبود مدیریت ارز چندگانه ====
+  primaryCurrency         String                        @default("IRR") // ارز اصلی سبد (برای نمایش و پرداخت نهایی)
+  supportedCurrencies     Currency[]                    @relation("CartSupportedCurrencies") // ارزهای مجاز برای آیتم‌ها
+  exchangeRatesAppliedAt  DateTime?                     // زمان آخرین محاسبه نرخ تبدیل (برای cache)
+
+  // ==== فیلدهای محاسبه‌شده جدید ====
+  subtotal                Int                           @default(0)      // مبلغ قبل از تخفیف و هزینه‌ها (در primaryCurrency)
+  total                   Int                           @default(0)      // مبلغ نهایی پس از همه محاسبات (جدید - برای کوئری سریع)
+
+  currency                String                        @default("IRR")  // legacy - نگه داشته شد برای سازگاری، اما primaryCurrency اولویت دارد
+
+  walletAvailable         Int?                          @default(0)
+  reservations            CartItemReservation[]
+  cachedSubtotal          Int                           @default(0)
+  cachedDiscountAmount    Int                           @default(0)
+  cachedShippingAmount    Int                           @default(0)
+  cachedTaxAmount         Int                           @default(0)
+  cachedTotal             Int                           @default(0) // legacy cached
+  shareToken              String?                       @unique
+  isPublic                Boolean                       @default(false)
+  shareMode               CartShareMode?
+  sharePassword           String?
+  shareExpiresAt          DateTime?
+  status                  CartStatus                    @default(ACTIVE)
+  bundleSavings           Int                           @default(0)
+  appliedBundles          CartBundleApplication[]
+  taxDetails              CartTaxDetail[]
+  taxAmount               Int                           @default(0)
+  selectedAddressId       String?
+  selectedAddress         UserAddress?                  @relation("SelectedShippingAddress", fields: [selectedAddressId], references: [id])
+  temporaryShippingAddress Json?
+  maxItems                Int?                          @default(50)
+  maxTotalAmount          Int?
+  activityLogs            CartActivityLog[]
+  items                   CartItem[]
+  savedItems              CartSavedItem[]
+  appliedDiscounts        CartAppliedDiscount[]
+  pendingCoupons          CartPendingCoupon[]
+  isGift                  Boolean                       @default(false)
+  giftRecipientName       String?
+  giftRecipientEmail      String?
+  giftRecipientPhone      String?
+  giftMessage             String?
+  giftSendAt              DateTime?
+  selectedShippingMethodId String?
+  selectedShippingMethod  ShippingMethod?               @relation(fields: [selectedShippingMethodId], references: [id])
+  shippingCost            Int                           @default(0)
+  customerNote            String?
+  isLocked                Boolean                       @default(false)
+  lockedAt                DateTime?
+  lockedBySession         String?
+  pricesLastValidatedAt   DateTime?
+  updatedAt               DateTime                      @updatedAt
+  expiresAt               DateTime?
+  lastActivityAt          DateTime                      @default(now()) @updatedAt
+
+  allowPartialPayment     Boolean                       @default(false) // آیا این سبد اجازه پرداخت جزئی دارد؟
+  minimumPaymentAmount    Int?                          // حداقل مبلغ برای پرداخت جزئی (در primaryCurrency)
+  depositAmount           Int?                          // مبلغ پیش‌پرداخت ثابت (اگر apply شود)
+
+  createdAt               DateTime                      @default(now())
+
+  @@index([userId, status])
+  @@index([guestToken])
+  @@index([ownerType])
+  @@index([expiresAt])
+  @@index([lastActivityAt])
+  @@index([status])
+  @@index([isLocked])
+  @@index([isGift])
+  @@index([primaryCurrency])
+}   
+model Currency {
+  code  String @id
+  carts Cart[] @relation("CartSupportedCurrencies")
+}
+  model CartTaxDetail {
+    id          String    @id @default(cuid())
+    cartId      String
+    cart        Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    title       String
+    rate        Float
+    amount      Int
+    currency    String    @default("IRR")
+    appliedAt   DateTime  @default(now())
+
+    taxRateId   String?
+    taxRate     TaxRate?  @relation(fields: [taxRateId], references: [id])
+
+    @@index([cartId])
+    @@index([rate])
+    @@index([taxRateId])
+  }
+    // ==================== سیستم مالیات پیشرفته ====================
+  model TaxRate {
+    id          String   @id @default(cuid())
+    countryId   String?
+    country     Country? @relation(fields: [countryId], references: [id])
+    province    String?
+    city        String?
+    postalCode  String?
+    categoryId  String?
+    category    Category? @relation(fields: [categoryId], references: [id])
+    productId   String?
+    product     Product? @relation(fields: [productId], references: [id])
+    rate        Float    // درصد، مثلاً 9.0
+    title       String   // مثلاً "VAT 9%", "Sales Tax"
+    isActive    Boolean  @default(true)
+    priority    Int      @default(0) // بالاتر = اولویت بیشتر
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    // رابطه معکوس با CartTaxDetail
+    taxDetails  CartTaxDetail[]
+
+    @@index([countryId])
+    @@index([categoryId])
+    @@index([productId])
+    @@index([isActive])
+    @@index([priority(sort: Desc)])
+  }
+    model CartActivityLog {
+      id          String   @id @default(cuid())
+      cartId      String
+      cart        Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+      action      String   // مثلاً "ITEM_ADDED", "QUANTITY_UPDATED", "DISCOUNT_APPLIED", "ADDRESS_CHANGED"
+      description String?  // توضیح اختیاری
+      details     Json?    // اطلاعات بیشتر مثل { productId: "...", oldQuantity: 2, newQuantity: 3 }
+      ipAddress   String?
+      userAgent   String?
+      createdAt   DateTime @default(now())
+
+      @@index([cartId])
+      @@index([action])
+      @@index([createdAt(sort: Desc)])
+    }
+  model CartItemReservation {
+  id               String    @id @default(cuid())
+  cartItemId       String    @unique
+  cartItem         CartItem  @relation(fields: [cartItemId], references: [id], onDelete: Cascade)
+  cartId           String
+  cart             Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId        String
+  reservedQuantity Int
+  reservedUntil    DateTime
+
+  // ==== فیلد جدید برای cleanup خودکار ====
+  isExpired        Boolean   @default(false) // علامت‌گذاری برای cleanup cron job
+  expiredAt        DateTime? // زمان واقعی انقضا (برای گزارش)
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([reservedUntil])
+  @@index([cartItemId])
+  @@index([cartId])
+  @@index([isExpired])
+}
+    model UserAddress {
+      id                String   @id @default(cuid())
+      userId            String
+      user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    cartItemShippingAssignments CartItemShippingAssignment[] @relation("CartItemShippingAddress")
+      title             String   // مثلاً "خانه"، "محل کار"
+      recipientName     String   // نام گیرنده
+      phone             String
+      province          String
+      city              String
+      postalCode        String
+      address           String   // آدرس کامل
+      isDefault         Boolean  @default(false)
+    orderItemShippingAssignments OrderShippingAssignment[] @relation("OrderItemShippingAddress")
+      // رابطه معکوس با Cart
+      selectedInCarts   Cart[]   @relation("SelectedShippingAddress")
+
+      // رابطه معکوس با Order
+      usedInOrders      Order[]  @relation("UsedShippingAddress")
+
+      createdAt         DateTime @default(now())
+      updatedAt         DateTime @updatedAt
+
+      @@unique([userId, isDefault])
+      @@index([userId])
+      @@index([isDefault])
+    }
+  enum CartStatus {
+    ACTIVE
+    ABANDONED     // ← جدید: برای cartهای منقضی‌شده اما هنوز موجود
+    CHECKED_OUT
+    EXPIRED
+  }
+
+    model CartAppliedDiscount {
+      id String @id @default(cuid())
+      cartId String
+      cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+      discountId String
+      discount Discount @relation(fields: [discountId], references: [id])
+
+      code String               // کد تخفیف (برای نمایش)
+      amountSaved Int           // مبلغ دقیق کسر شده توسط این تخفیف
+      currency String @default("IRR")
+      appliedAt DateTime @default(now())
+
+      // برای جلوگیری از اعمال مجدد کدهای oncePerUser قبل از checkout
+      isValidated Boolean @default(false) // آیا در آخرین validate معتبر بود؟
+
+      @@unique([cartId, discountId])
+      @@index([cartId])
+      @@index([discountId])
+      @@index([code])
+    }
+model CartPendingCoupon {
+  id                    String    @id @default(cuid())
+  cartId                String
+  cart                  Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  code                  String
+  isValid               Boolean   @default(false)
+  validationMessage     String?
+  validatedAt           DateTime?
+  discountAmountPreview Int?
+  currency              String    @default("IRR")
+  eligibleItems         Json?
+  ineligibleItems       Json?
+  conflictReason        String?
+  appliedDiscountType   String?
+  @@unique([cartId, code])
+  @@index([cartId])
+  @@index([code])
+  @@index([validatedAt])
+}
+  model OrderPayment {
+    id         String        @id @default(cuid())
+    orderId    String
+    order      Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+    amount     Int
+    currency   String        @default("IRR")
+    method     PaymentMethod
+    status     PaymentStatus @default(PENDING)
+    authority  String?
+    refId      String?
+    paidAt     DateTime?
+    // برای partial
+    isPartial  Boolean       @default(false)
+    note       String?
+    createdAt  DateTime      @default(now())
+    @@index([orderId])
+    @@index([status])
+  }
 model CartItem {
-  id        String   @id @default(cuid())
-  cartId    String
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
-  productId String?
-  product   Product? @relation("CartItemToProduct", fields: [productId], references: [id])
-  courseId  String?
-  course    Course?  @relation("CartItemToCourse", fields: [courseId], references: [id])
-  quantity  Int      @default(1)
-  addedAt   DateTime @default(now())
+  id                      String                        @id @default(cuid())
+  cartId                  String
+  cart                    Cart                          @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId               String?
+  product                 Product?                      @relation("CartItemToProduct", fields: [productId], references: [id])
+  courseId                String?
+  course                  Course?                       @relation("CartItemToCourse", fields: [courseId], references: [id])
+  subscriptionPlanId      String?
+  subscriptionPlan        SubscriptionPlan?             @relation(fields: [subscriptionPlanId], references: [id])
+  quantity                Int                           @default(1)
+  maxAllowedPerOrder      Int?
+  reservation             CartItemReservation?
+  shippingAssignment      CartItemShippingAssignment?
+
+  requiresShipping        Boolean                       @default(true) @db.Boolean
+  sellerId                String?
+  seller                  User?                         @relation("CartItemSeller", fields: [sellerId], references: [id])
+
+  isGiftItem              Boolean                       @default(false)
+  giftRecipientName       String?
+  giftRecipientEmail      String?
+  giftMessage             String?
+
+  // ==== بهبود ارز: قیمت در زمان اضافه شدن + ارز آیتم ====
+  priceAtAdd              Int
+  currencyAtAdd           String                        // ارز در لحظه اضافه شدن به سبد
+  currency                String                        // ارز فعلی آیتم (ممکن است با primaryCurrency سبد متفاوت باشد)
+
+  snapshot                Json?
+  isAvailable             Boolean                       @default(true)
+  isPriceValid            Boolean                       @default(true)
+  unavailableReason       String?
+  validationNote          String?
+
+  // ==== تخفیف خودکار فروشنده/مدرس ====
+  autoInstructorDiscountPercent Int?     @default(0) // درصد تخفیف خودکار اعمال‌شده توسط مدرس/فروشنده (مثلاً ۱۰٪ برای دانشجویان خودش)
+  autoInstructorDiscountAmount  Int?     @default(0) // مبلغ ثابت تخفیف خودکار (در currencyAtAdd)
+
+  addedAt                 DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+
+  stockMovements          StockMovement[]
 
   @@unique([cartId, productId, courseId])
+  @@index([currency])
+  @@index([isAvailable])
+  @@index([isPriceValid])
+  @@index([requiresShipping])
+  @@index([isGiftItem])
+  @@index([subscriptionPlanId])
+  @@index([sellerId])
 }
+    enum PaymentMethodProvider {
+      ZARINPAL
+      IDPAY
+      PAYIR
+      STRIPE
+      PAYPAL
+      CRYPTO // برای والت‌های سفارشی
+      SAVED_CARD // فقط برای نمایش
+    }
 
-model Order {
-  id             String          @id @default(cuid())
-  userId         String
-  user           User            @relation(fields: [userId], references: [id])
-  totalAmount    Int
-  currency       String
-  discountAmount Int             @default(0)
-  finalAmount    Int
-  status         OrderStatus     @default(PENDING)
-  paymentMethod  String?
-  trackingCode   String?
-  items          OrderItem[]
-  payment        Payment?
-  discountUsages DiscountUsage[] @relation("OrderDiscountUsages")
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-}
+    model SavedPaymentMethod {
+      id String @id @default(cuid())
+      userId String
+      user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model OrderItem {
-  id        String   @id @default(cuid())
-  orderId   String
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId String?
-  product   Product? @relation("OrderItemToProduct", fields: [productId], references: [id])
-  courseId  String?
-  course    Course?  @relation("OrderItemToCourse", fields: [courseId], references: [id])
-  price     Int
-  currency  String
-  quantity  Int
-}
+      provider PaymentMethodProvider
+      token String
+      label String
+      isDefault Boolean @default(false)
+      expiresAt DateTime?
+      metadata Json @default("{}")
 
-model Payment {
-  id           String        @id @default(cuid())
-  orderId      String        @unique
-  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  amount       Int
-  currency     String        @default("IRR")
-  method       PaymentMethod
-  status       PaymentStatus @default(PENDING)
-  authority    String?
-  refId        String?
-  cardPan      String?
-  receiptImage String?
-  approvedBy   String?
-  approvedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-}
+      carts Cart[] @relation("CartSavedPaymentMethod")
 
-model Tag {
-  id       String    @id @default(cuid())
-  name     String    @unique
-  slug     String    @unique
-  products Product[] @relation("ProductTags")
-  courses  Course[]  @relation("CourseTags")
-}
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
 
-model Category {
-  id        String    @id @default(cuid())
-  name      String
-  slug      String    @unique
-  image     String?
-  parentId  String?
-  parent    Category? @relation("CategoryTree", fields: [parentId], references: [id])
-  children  Category[] @relation("CategoryTree")
-  products  Product[]
-  courses   Course[]  @relation("CourseCategories")
-  discounts Discount[] @relation("DiscountCategories")
+      @@unique([userId, isDefault])
+      @@index([userId])
+      @@index([provider])
+    }
+  model CartSavedItem {
+    id           String    @id @default(cuid())
+    cartId       String
+    cart         Cart      @relation(fields: [cartId], references: [id], onDelete: Cascade)
+    
+    productId    String?
+    product      Product?  @relation("SavedItemToProduct", fields: [productId], references: [id])
+    
+    courseId     String?
+    course       Course?   @relation("SavedItemToCourse", fields: [courseId], references: [id])
+    
+    savedAt      DateTime  @default(now())
 
-  // ←←←← این خط رو اضافه کن
-  isActive  Boolean   @default(true)
+    // === فیلدهای جدید برای ذخیره اطلاعات کامل ===
+    originalPriceAtSave      Int?      // قیمت در لحظه ذخیره
+    originalCurrencyAtSave   String?   // ارز در لحظه ذخیره (مثل IRR, USD)
+    originalQuantity         Int?      @default(1)  // تعداد در لحظه ذخیره
+    isGiftItem               Boolean   @default(false)
+    giftRecipientName        String?
+    giftRecipientEmail       String?
+    giftMessage              String?
+    note                     String?  
 
-  createdAt DateTime  @default(now())
+    @@unique([cartId, productId, courseId])
+    @@index([cartId])
+    @@index([savedAt(sort: Desc)])
+  }
+    model Order {
+      id                    String    @id @default(cuid())
+      userId                String
+      user                  User      @relation(fields: [userId], references: [id])
+      payments   OrderPayment[]
+      
+      walletTransactions     WalletTransaction[]
+        refundRequests         RefundRequest[]
+      returnRequests         ReturnRequest[]
+      totalAmount           Int       // مبلغ کل قبل از تخفیف
+      discountAmount        Int       @default(0)
+      shippingAmount        Int       @default(0)
+      taxAmount             Int       @default(0)     // جدید: مبلغ مالیات
+      finalAmount           Int       // مبلغ قابل پرداخت نهایی
+      currency              String    @default("IRR")
 
-  @@index([isActive]) // اختیاری، برای جستجوی سریع
-}
+      status                OrderStatus @default(PENDING)
+cartId String? @unique
+      // روش ارسال
+      shippingMethodId      String?
+      shippingMethod        ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
+      shippingCost          Int       @default(0)
+      trackingCode          String?
 
-model Review {
-  id        String   @id @default(cuid())
-  rating    Int
-  comment   String?
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id])
-  courseId  String?
-  course    Course?  @relation(fields: [courseId], references: [id])
-  createdAt DateTime @default(now())
+    shippingAddressId     String?
+      shippingAddress       UserAddress? @relation("UsedShippingAddress", fields: [shippingAddressId], references: [id])
 
-  reactions ReviewReaction[]
-}
+      shippingAddressSnapshot Json
 
-model WishlistItem {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id])
-  courseId  String?
-  course    Course?  @relation(fields: [courseId], references: [id])
+      customerNote          String?
 
-  @@unique([userId, productId, courseId])
-}
+      // پرداخت
+      paymentMethod         String?
+      payment               Payment?
 
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  message   String
-  type      String   @default("info")
-  isRead    Boolean  @default(false)
-  link      String?
-  createdAt DateTime @default(now())
-  readAt    DateTime?
-  @@index([userId])
-}
+      // آیتم‌ها
+      items                 OrderItem[]
 
-model Ticket {
-  id        String          @id @default(cuid())
-  userId    String
-  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  status    TicketStatus    @default(OPEN)
-  priority  TicketPriority  @default(MEDIUM)
-  messages  TicketMessage[]
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+      appliedDiscounts      OrderAppliedDiscount[]
+      discountUsages        DiscountUsage[] @relation("OrderDiscountUsages")
 
-  @@index([userId])
-}
 
-model TicketMessage {
-  id        String        @id @default(cuid())
-  ticketId  String
-  ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
-  sender    MessageSender
-  content   String
-  isAI      Boolean       @default(false)
-  createdAt DateTime      @default(now())
-}
+      createdAt             DateTime  @default(now())
+      updatedAt             DateTime  @updatedAt
 
-model Like {
-  id     String @id @default(cuid())
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+      @@index([userId])
+      @@index([status])
+      @@index([createdAt(sort: Desc)])
+      @@index([finalAmount])
+      @@index([shippingAddressId])
+      @@index([currency])
+    }
+    model OrderAppliedDiscount {
+      id String @id @default(cuid())
+      orderId String
+      order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  productId String?
-  product   Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
-  courseId  String?
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  postId    String?
-  post      Post?    @relation("PostLikes", fields: [postId], references: [id], onDelete: Cascade)
+      discountId String
+      discount Discount @relation(fields: [discountId], references: [id])
 
-  createdAt DateTime @default(now())
+      code String
+      amountSaved Int
+      currency String
 
-  @@unique([userId, productId])
-  @@unique([userId, courseId])
-  @@unique([userId, postId])
-}
+      appliedAt DateTime @default(now())
 
-model ActivityLog {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-  action    String
-  entity    String
-  entityId  String?
-  details   Json?
-  ip        String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  ipAddress  String?   @db.VarChar(45)
-  @@index([userId])
-  @@index([action])
-  @@index([createdAt])
-}
+      @@unique([orderId, discountId])
+      @@index([orderId])
+      @@index([discountId])
+    }
 
-model Discount {
-  id             String                 @id @default(cuid())
-  code           String                 @unique
-  title          String
-  description    String?
-  type           DiscountType
-  value          Int
-  scope          DiscountScope          @default(SPECIFIC)
-  products       Product[]              @relation("ProductDiscounts")
-  categories     Category[]             @relation("DiscountCategories")
-  minimumAmount  Int?
-  usageLimitType DiscountUsageLimitType @default(UNLIMITED)
-  usageLimit     Int?
-  usedCount      Int                    @default(0)
-  oncePerUser    Boolean                @default(false)
-  startsAt       DateTime?
-  endsAt         DateTime?
-  isActive       Boolean                @default(true)
-  usages         DiscountUsage[]
-  createdAt      DateTime               @default(now())
-  updatedAt      DateTime               @updatedAt
-}
 
-model DiscountUsage {
-  id         String   @id @default(cuid())
-  discountId String
-  discount   Discount @relation(fields: [discountId], references: [id])
-  userId     String
-  user       User     @relation("UserDiscountUsages", fields: [userId], references: [id])
-  orderId    String
-  order      Order    @relation("OrderDiscountUsages", fields: [orderId], references: [id])
-  usedAt     DateTime @default(now())
+    model OrderShippingAssignment {
+      id String @id @default(cuid())
+      orderItemId String @unique
+      orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
 
-  @@unique([discountId, userId])
-}
+      addressId String?
+      address UserAddress? @relation("OrderItemShippingAddress", fields: [addressId], references: [id])
 
-model Certificate {
-  id                String   @id @default(cuid())
-  userId            String
-  user              User     @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
-  courseId          String
-  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  issuedAt          DateTime @default(now())
-  certificateNumber String   @unique @default(cuid())
-  score             Float?
-  grade             String?
+      temporaryAddress Json?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+      shippingMethodId String?
+      shippingMethod ShippingMethod? @relation("OrderItemShippingMethod", fields: [shippingMethodId], references: [id])
 
-  @@unique([userId, courseId])
-  @@index([userId])
-  @@index([courseId])
-}
+      shippingCost Int @default(0)
 
-// ==================== BLOG SYSTEM ====================
+      createdAt DateTime @default(now())
 
-model BlogCategory {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  color     String   @default("bg-indigo-600")
-  posts     Post[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+      @@index([orderItemId])
+      @@index([addressId])
+      @@index([shippingMethodId])
+    }
+      model OrderItem {
+        id          String   @id @default(cuid())
+        orderId     String
+        order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+        productId   String?
+        product     Product? @relation("OrderItemToProduct", fields: [productId], references: [id])
+        courseId    String?
+        course      Course?  @relation("OrderItemToCourse", fields: [courseId], references: [id])
+        price       Int
+        currency    String
+        quantity    Int
+        shippingAssignment OrderShippingAssignment?
+      digitalDelivery DigitalProductDelivery?
+        hasReviewed Boolean @default(false)
+        stockMovements   StockMovement[]
+        review      Review?  @relation("OrderItemReviews")
+        sellerId      String?
+        seller        User?    @relation("OrderItemSeller", fields: [sellerId], references: [id])
+        refundItems   RefundItem[]
+      @@index([sellerId])
+        @@index([orderId])
+        @@index([productId])
+        @@index([courseId])
+      }
+  model DigitalProductDelivery {
+    id           String   @id @default(cuid())
+    orderItemId  String   @unique
+    orderItem   OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+    deliveryType String   // "DOWNLOAD_LINK", "COURSE_ACCESS", "LICENSE_KEY", "EMAIL_ATTACHMENT"
+    accessUrl    String?  // لینک دانلود یا دسترسی
+    licenseKey   String?
+    expiresAt    DateTime?
+    downloadCount Int     @default(0)
+    maxDownloads  Int?    @default(5)
+    deliveredAt   DateTime @default(now())
+    @@index([orderItemId])
+  }
+    model Review {
+    id           String    @id @default(cuid())
+    rating       Int
+    comment      String?
+    userId       String
+    user         User      @relation(fields: [userId], references: [id])
 
-  @@index([slug])
-}
+    products     Product[] @relation("ProductReviews")
+    courses      Course[]  @relation("CourseReviews")
 
-model BlogTag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  posts     Post[]   @relation("PostTags")
-  createdAt DateTime @default(now())
+    orderItemId  String?   @unique
+    orderItem    OrderItem? @relation("OrderItemReviews", fields: [orderItemId], references: [id])
 
-  @@index([slug])
-}
+    reactions    ReviewReaction[]
 
+    createdAt    DateTime  @default(now())
+
+    @@index([userId])
+    @@index([rating])
+  }
+
+        model Payment {
+          id           String        @id @default(cuid())
+          orderId      String        @unique
+          order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+          amount       Int
+          currency     String        @default("IRR")
+          method       PaymentMethod
+          status       PaymentStatus @default(PENDING)
+          authority    String?
+          refId        String?
+          cardPan      String?
+          receiptImage String?
+          approvedBy   String?
+          approvedAt   DateTime?
+          createdAt    DateTime      @default(now())
+          updatedAt    DateTime      @updatedAt
+        }
+
+  model Tag {
+    id    String @id @default(cuid())
+    name  String @unique
+    slug  String @unique
+    posts Post[] @relation("PostTags")
+    products Product[] @relation("ProductTags")     // اگر محصول هم تگ داره
+    courses  Course[]  @relation("CourseTags")       // اگر دوره هم تگ داره
+    createdAt DateTime @default(now())
+    @@index([name])
+    @@index([slug])
+  }
+
+        model Category {
+          id        String     @id @default(cuid())
+          name      String
+          slug      String     @unique
+          image     String?
+          parentId  String?
+          parent    Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+          children  Category[] @relation("CategoryTree")
+          products  Product[]
+          courses   Course[]   @relation("CourseCategories")
+          discounts Discount[] @relation("DiscountCategories")
+          taxRates               TaxRate[]
+
+          // ←←←← این خط رو اضافه کن
+          isActive Boolean @default(true)
+
+          createdAt DateTime @default(now())
+
+          @@index([isActive]) // اختیاری، برای جستجوی سریع
+        }
+
+
+
+        model WishlistItem {
+          id        String   @id @default(cuid())
+          userId    String
+          user      User     @relation(fields: [userId], references: [id])
+          productId String?
+          product   Product? @relation(fields: [productId], references: [id])
+          courseId  String?
+          course    Course?  @relation(fields: [courseId], references: [id])
+
+          @@unique([userId, productId, courseId])
+        }
+
+
+
+        model Ticket {
+          id        String          @id @default(cuid())
+          userId    String
+          user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+          title     String
+          status    TicketStatus    @default(OPEN)
+          priority  TicketPriority  @default(MEDIUM)
+          messages  TicketMessage[]
+          createdAt DateTime        @default(now())
+          updatedAt DateTime        @updatedAt
+
+          @@index([userId])
+        }
+
+        model TicketMessage {
+          id        String        @id @default(cuid())
+          ticketId  String
+          ticket    Ticket        @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+          sender    MessageSender
+          content   String
+          isAI      Boolean       @default(false)
+          createdAt DateTime      @default(now())
+        }
+
+      model Like {
+    id         String   @id @default(cuid())
+    userId     String
+    user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    products   Product[] @relation("ProductLikes")
+    courses    Course[]  @relation("CourseLikes")
+    posts      Post[]    @relation("PostLikes")
+    comments   Comment[] @relation("CommentLikes")
+
+    createdAt  DateTime @default(now())
+
+  
+  }
+
+        model ActivityLog {
+          id        String   @id @default(cuid())
+          userId    String
+          user      User     @relation(fields: [userId], references: [id])
+          action    String
+          entity    String
+          entityId  String?
+          details   Json?
+          ip        String?
+          userAgent String?
+          createdAt DateTime @default(now())
+          ipAddress String?  @db.VarChar(45)
+
+          @@index([userId])
+          @@index([action])
+          @@index([createdAt])
+        }
+
+
+
+      // ==================== سیستم گواهینامه حرفه‌ای ====================
+
+      enum CertificateStatus {
+        ISSUED               // صادر شده
+        PENDING_VERIFICATION // در انتظار تأیید (مثلاً برای دوره‌های خاص)
+        REVOKED              // لغو شده
+        EXPIRED              // منقضی شده
+      }
+
+      model CertificateTemplate {
+        id           String       @id @default(cuid())
+        title        String
+        description  String?
+        htmlTemplate String       // HTML کامل با placeholderهایی مثل {{fullName}}, {{courseTitle}}, {{issueDate}}, {{score}}, {{grade}}, {{certificateNumber}} و ...
+        cssStyles    String?      // CSS سفارشی برای قالب
+        previewImage String?      // تصویر پیش‌نمایش استاتیک قالب
+        isDefault    Boolean      @default(false)  // آیا قالب پیش‌فرض سایت است؟
+        isActive     Boolean      @default(true)
+        createdById  String
+        createdBy    User         @relation("CreatedCertificateTemplates", fields: [createdById], references: [id])
+        certificates Certificate[]
+
+        createdAt    DateTime     @default(now())
+        updatedAt    DateTime     @updatedAt
+
+        @@index([isActive])
+        @@index([isDefault])
+        @@index([createdById])
+      }
+
+      model Certificate {
+        id                String             @id @default(cuid())
+        userId            String
+        user              User               @relation("UserCertificates", fields: [userId], references: [id], onDelete: Cascade)
+        courseId          String
+        course            Course             @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        verificationCode    String?   @unique   // کد ۸-۱۲ رقمی یا UUID کوتاه برای چک کردن اصالت
+        verifiedAt          DateTime?           // کی آخرین بار تأیید شد
+        lastVerifiedBy      String?
+        issuedAt          DateTime           @default(now())     // تاریخ صدور گواهینامه
+        certificateNumber String             @unique @default(cuid())  // شماره منحصر به فرد گواهینامه
+        score             Float?                                         // نمره نهایی دانشجو (مثلاً ۹۲.۵)
+        grade             String?                                        // درجه مانند "A+", "عالی", "ممتاز"
+        completionDate    DateTime?                                      // تاریخ واقعی تکمیل دوره توسط دانشجو
+        pdfAccessToken      String?   @unique   // توکن موقت برای دانلود امن
+        pdfTokenExpiresAt   DateTime?
+        // قالب استفاده شده
+        templateId        String?
+        template          CertificateTemplate? @relation(fields: [templateId], references: [id])
+        digitalSignature    String?             // hash یا امضای دیجیتال
+        signedAt            DateTime?
+        // وضعیت گواهینامه
+        status            CertificateStatus  @default(ISSUED)
+
+        // فیلدهای سفارشی (پیام تشکر، رتبه، امضا، لوگوهای اضافی و ...)
+        customFields      Json               @default("{}")
+
+        // لینک PDF تولید شده (در صورت ذخیره‌سازی)
+        pdfUrl            String?
+
+        // لینک عمومی کوتاه برای نمایش گواهینامه (مثل yoursite.com/cert/abc123)
+        publicUrl         String?            @unique
+
+        // آیا گواهینامه در پروفایل عمومی دانشجو نمایش داده شود؟
+        isPublic          Boolean            @default(false)
+
+        // تاریخ انقضای گواهینامه (اختیاری - برای دوره‌های دارای اعتبار محدود)
+        expiresAt         DateTime?
+
+        // دلیل لغو (در صورت REVOKED بودن)
+        revokeReason      String?
+
+        // آمار مشاهده و دانلود
+        viewCount         Int                @default(0)
+        downloadCount     Int                @default(0)
+        signatureType     String?   
+        createdAt         DateTime           @default(now())
+        updatedAt         DateTime           @updatedAt
+        @@index([status, issuedAt(sort: Desc)])
+        @@index([verificationCode])
+        @@index([pdfAccessToken])
+        @@unique([userId, courseId])           // هر دانشجو فقط یک گواهینامه برای هر دوره
+        @@index([userId])
+        @@index([courseId])
+        @@index([templateId])
+        @@index([issuedAt])
+        @@index([status])
+        @@index([isPublic])
+        @@index([expiresAt])
+        @@index([certificateNumber])
+      }
+
+        // آپدیت مدل Certificate (قبلاً داشتی — فقط کمی بهبود)
+        // ==================== BLOG SYSTEM ====================
+
+        model BlogCategory {
+          id        String   @id @default(cuid())
+          name      String   @unique
+          slug      String   @unique
+          color     String   @default("bg-indigo-600")
+          posts     Post[]
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
+
+          @@index([slug])
+        }
+
+
+      // حذف فیلد content از مدل Post
 model Post {
-  id            String    @id @default(cuid())
-  title         String
-  slug          String    @unique
-  excerpt       String?
-  content       String
-  thumbnail     String?
-  featuredImage String?
-  readingTime   Int       @default(5)
-  published     Boolean   @default(false)
-  publishedAt   DateTime?
-  featured      Boolean   @default(false)
-  views         Int       @default(0)
+  id              String   @id @default(cuid())
+  title           String
+  slug            String   @unique
+  excerpt         String?
+ newsletter Newsletter?
+  thumbnail       String?
+  analytics PostAnalytics?
+  featuredImage   String?
+  readingTime     Int      @default(5)
+  published       Boolean  @default(false)
+  publishedAt     DateTime?
+  featured        Boolean  @default(false)
+  views           Int      @default(0)
+  shares          Int      @default(0)
+  commentCount    Int      @default(0)
 
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
+  isPremium       Boolean  @default(false)
+  premiumTierId   String?
 
-  categoryId String?
-  category   BlogCategory? @relation(fields: [categoryId], references: [id])
+  blocks          PostContentBlock[] 
 
-  tags     BlogTag[] @relation("PostTags")
-  comments Comment[] @relation("PostComments") // بدون fields و references
-  likes    Like[]    @relation("PostLikes")
+  relatedPosts    Post[]   @relation("RelatedPosts")
+  relatedTo       Post[]   @relation("RelatedPosts")
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+
+  categoryId      String?
+  category        BlogCategory? @relation(fields: [categoryId], references: [id])
+
+  tags            Tag[]    @relation("PostTags")
+  comments        Comment[] @relation("PostComments")
+  likes           Like[]   @relation("PostLikes")
+
+  draftContent    String?  // اختیاری: برای ذخیره draft جداگانه
+  seriesId        String?
+  series          PostSeries? @relation("SeriesPosts", fields: [seriesId], references: [id])
+  seriesOrder     Int?
+
+  versions        PostVersion[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([slug])
   @@index([published])
   @@index([publishedAt])
   @@index([authorId])
   @@index([categoryId])
+  @@index([isPremium])
 }
-
-// ==================== سیستم کامنت جهانی (Polymorphic) ====================
-
-model Comment {
-  id              String    @id @default(cuid())
-  content         String
-  parentId        String?
-  parent          Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
-  replies         Comment[] @relation("CommentReplies")
-  authorId        String
-  author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  commentableType String
-  commentableId   String
-
-  post    Post?    @relation("PostComments", fields: [commentableId], references: [id], map: "fk_comment_post")
-  course  Course?  @relation("CourseComments", fields: [commentableId], references: [id], map: "fk_comment_course")
-  product Product? @relation("ProductComments", fields: [commentableId], references: [id], map: "fk_comment_product")
-
-  isApproved Boolean  @default(false)
-  isRejected Boolean  @default(false)
-  likes      Int      @default(0)
-  reports    Int      @default(0)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  rating Int? // اختیاری، فقط برای بلاگ یا ریویوها
-  @@index([commentableType, commentableId])
-  @@index([authorId])
-  @@index([parentId])
-  @@index([createdAt])
-}
-
-// prisma/schema.prisma
-model ReviewReaction {
-  id        String       @id @default(cuid())
-  reviewId  String
-  userId    String
-  type      ReactionType
-  createdAt DateTime     @default(now())
-
-  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([reviewId, userId]) // هر کاربر فقط یک واکنش
-}
-
-enum ReactionType {
-  LIKE
-  DISLIKE
-  LOVE
-  LAUGH
-  WOW
-  SAD
-  ANGRY
-  THUMBS_UP
-}
-
-// ==================== سیستم درس‌ها (Lessons) ====================
-model Lesson {
-  id       String @id @default(cuid())
-  courseId String
-  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  sectionId   String?  // اختیاری — اگر null باشه، درس آزاد در دوره
-  section     CourseSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  title       String
-  slug        String
-  description String?
-  content     String?
-  videoUrl    String?
-  duration    Int?
-  isFree      Boolean @default(false)
-  isPublished Boolean @default(true)
-
-  order Int
-  type  LessonType @default(VIDEO)
-
-  attachments LessonAttachment[]
-  quiz        Quiz?
-
-  views Int @default(0)
-
-  // فقط این خط باشه، خط قبلی رو کامل پاک کردی؟
-  completions LessonCompletion[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([courseId, slug])
-  @@index([courseId])
-  @@index([order])
-}
-
-enum LessonType {
+enum PostContentBlockType {
+  HEADING         // h1, h2, h3, h4
+  PARAGRAPH
+  IMAGE
+  GALLERY
   VIDEO
-  TEXT
-  QUIZ
-  DOWNLOAD
-  LIVE
+  EMBED           // YouTube, Vimeo, Twitter, Instagram, CodePen, etc.
+  QUOTE
+  CALLOUT         // جعبه ویژه با آیکون
+  CODE
+  LIST            // ordered یا unordered
+  DIVIDER
+  BUTTON
+  COLUMNS         // بلوک والد برای ستون‌ها
+  HTML            // برای کد خام (با احتیاط!)
+  FILE            // دانلود فایل
+  TABLE
 }
 
-model LessonAttachment {
-  id       String @id @default(cuid())
-  lessonId String
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+model PostContentBlock {
+  id       String               @id @default(cuid())
+  postId   String
+  post     Post                 @relation(fields: [postId], references: [id], onDelete: Cascade)
 
-  title String
-  url   String
-  type  String // pdf, zip, ppt, etc.
-  size  Int? // بایت
+  type     PostContentBlockType
 
-  createdAt DateTime @default(now())
+  // محتوای بلوک — کاملاً انعطاف‌پذیر
+  content  Json                 // مثال‌ها پایین
 
-  @@index([lessonId])
+  order    Int                  // ترتیب بلوک‌ها
+
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  // برای بلوک‌های تو در تو مثل columns
+  parentId String?
+  parent   PostContentBlock?    @relation("BlockChildren", fields: [parentId], references: [id])
+  children PostContentBlock[]   @relation("BlockChildren")
+
+  @@index([postId])
+  @@index([postId, order])
+  @@index([type])
 }
-
-model Quiz {
-  id       String @id @default(cuid())
-  lessonId String @unique
-  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-
-  title        String
-  instructions String?
-  timeLimit    Int?
-  passingScore Int     @default(70)
-
-  questions QuizQuestion[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model QuizQuestion {
-  id     String @id @default(cuid())
-  quizId String
-  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
-
-  question String
-  type     QuestionType @default(MCQ)
-  options  Json? // برای MCQ, MULTIPLE
-  answer   String // جواب درست
-  score    Float        @default(1)
-
-  order Int
-
-  @@index([quizId])
-}
-
-enum QuestionType {
-  MCQ
-  MULTIPLE
-  TRUE_FALSE
-  SHORT_ANSWER
-}
-
-// رابطه تکمیل درس توسط کاربر
-model LessonCompletion {
+model PostVersion {
   id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lessonId    String
-  lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  completedAt DateTime @default(now())
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  version     Int
+  title       String
+  content     String
+  excerpt     String?
+  changedById String
+  changedBy   User     @relation("PostVersionChangedBy", fields: [changedById], references: [id])
+  changedAt   DateTime @default(now())
+  note        String?
 
-  @@unique([userId, lessonId])
+  @@unique([postId, version])
+  @@index([postId])
+  @@index([changedAt(sort: Desc)])
+}
+model PostSeries {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique
+  description String?
+  image       String?
+  posts       Post[]   @relation("SeriesPosts")
+  postCount   Int      @default(0)  // denormalized برای شمار سریع پست‌ها
+
+  @@index([slug])
+}
+        // ==================== سیستم کامنت جهانی (Polymorphic) ====================
+
+        model Comment {
+          id              String    @id @default(cuid())
+          content         String
+          parentId        String?
+          parent          Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+          replies         Comment[] @relation("CommentReplies")
+          authorId        String
+          author          User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+          commentableType String
+          commentableId   String
+
+          post    Post?    @relation("PostComments", fields: [commentableId], references: [id], map: "fk_comment_post")
+          course  Course?  @relation("CourseComments", fields: [commentableId], references: [id], map: "fk_comment_course")
+          product Product? @relation("ProductComments", fields: [commentableId], references: [id], map: "fk_comment_product")
+
+          isApproved Boolean  @default(false)
+          isRejected Boolean  @default(false)
+          likes Like[] @relation("CommentLikes")
+          reports    Int      @default(0)
+          createdAt  DateTime @default(now())
+          updatedAt  DateTime @updatedAt
+          rating     Int? // اختیاری، فقط برای بلاگ یا ریویوها
+
+          @@index([commentableType, commentableId])
+          @@index([authorId])
+          @@index([parentId])
+          @@index([createdAt])
+        }
+
+        // prisma/schema.prisma
+        model ReviewReaction {
+          id        String       @id @default(cuid())
+          reviewId  String
+          userId    String
+          type      ReactionType
+          createdAt DateTime     @default(now())
+
+          review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+          user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+          @@unique([reviewId, userId]) // هر کاربر فقط یک واکنش
+        }
+
+        enum ReactionType {
+          LIKE
+          DISLIKE
+          LOVE
+          LAUGH
+          WOW
+          SAD
+          ANGRY
+          THUMBS_UP
+        }
+
+        // ==================== سیستم درس‌ها (Lessons) ====================
+        // ==================== سیستم درس‌ها (Lessons) ====================
+      model Lesson {
+        id          String            @id @default(cuid())
+        courseId    String
+        course      Course            @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        sectionId   String?
+        section     CourseSection?    @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+        title       String
+        slug        String
+        description String?
+        content     Json?
+        videoUrl    String?
+        duration    Int?
+        isFree      Boolean @default(false)
+        isPublished Boolean @default(true)
+        order       Int
+        type        LessonType @default(VIDEO)
+        attachments LessonAttachment[]
+        quiz        Quiz?
+        progressRecords LessonProgress[]
+        completions LessonCompletion[]
+        views       LessonView[]      // رابطه جدید به جای فیلد views
+        createdAt   DateTime @default(now())
+        updatedAt   DateTime @updatedAt
+      contentBlocks LessonContentBlock[]
+      isDripped           Boolean   @default(false)
+        dripDaysAfterEnroll Int?      // چند روز بعد از ثبت‌نام آزاد شود
+        dripAfterLessonId   String?   // بعد از تکمیل این درس آزاد شود
+        dripAfterLesson     Lesson?   @relation("LessonDripDependency", fields: [dripAfterLessonId], references: [id])
+
+        // رابطه معکوس برای وابستگی‌ها
+        dependentLessons    Lesson[]  @relation("LessonDripDependency")
+        @@index([isDripped])
+      @@index([dripDaysAfterEnroll])
+      @@index([dripAfterLessonId])
+        @@unique([courseId, slug])
+        @@index([courseId])
+        @@index([sectionId])
+        @@index([order])
+        @@index([type])
+        @@index([isFree])
+        @@index([isPublished])
+      }
+
+        enum LessonType {
+          VIDEO
+          TEXT
+          QUIZ
+          DOWNLOAD
+          LIVE
+        }
+      enum LessonContentBlockType {
+        HEADING
+        PARAGRAPH
+        IMAGE
+        VIDEO
+        CODE
+        LIST
+        QUOTE
+        EMBED // برای iframe، کدهای embed و ...
+        FILE
+      }
+
+      model LessonContentBlock {
+        id          String                  @id @default(cuid())
+        lessonId    String
+        lesson      Lesson                  @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+        type        LessonContentBlockType
+        content     Json                    // محتوای هر بلوک (متن، url، caption و ...)
+        order       Int
+        createdAt   DateTime                @default(now())
+        updatedAt   DateTime                @updatedAt
+
+        @@index([lessonId])
+        @@index([order])
+        @@index([type])
+      }
+        model LessonAttachment {
+          id       String @id @default(cuid())
+          lessonId String
+          lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+          title String
+          url   String
+          type  String // pdf, zip, pptx, docx, etc.
+          size  Int? // بایت
+
+          createdAt DateTime @default(now())
+
+          @@index([lessonId])
+        }
+
+      model Quiz {
+        id           String    @id @default(cuid())
+        lessonId     String    @unique
+        lesson       Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+        title        String
+        instructions String?
+        timeLimit    Int?
+        passingScore Int       @default(70)
+        shuffleQuestions Boolean @default(true)
+        oneQuestionAtATime Boolean @default(true)
+        questions    QuizQuestion[]
+        attempts     QuizAttempt[]    
+        createdAt    DateTime  @default(now())
+        updatedAt    DateTime  @updatedAt
+      }
+
+      model QuizQuestion {
+        id        String    @id @default(cuid())
+        quizId    String
+        quiz      Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+        question  String
+        type      QuestionType @default(MCQ)
+        options   Json?
+        answer    String
+        score     Float     @default(1)
+        order     Int
+        answers   QuizAttemptAnswer[]  
+        @@index([quizId])
+      }
+      model LessonView {
+        id        String   @id @default(cuid())
+        userId    String
+        user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+        lessonId  String
+        lesson    Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+        viewedAt  DateTime @default(now())
+        ip        String?  // اختیاری برای تشخیص بهتر
+
+        @@unique([userId, lessonId]) // هر کاربر فقط یک بار بازدید حساب شود
+        @@index([lessonId])
+        @@index([viewedAt])
+      }
+        enum QuestionType {
+          MCQ
+          MULTIPLE
+          TRUE_FALSE
+          SHORT_ANSWER
+          FILE_UPLOAD // اختیاری برای آینده
+        }
+
+        // تکمیل درس توسط کاربر
+      model LessonCompletion {
+        id          String   @id @default(cuid())
+        userId      String
+        user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+        lessonId    String
+        lesson      Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+        completedAt DateTime @default(now())
+
+        bonus       LessonCompletionBonus?
+
+        @@unique([userId, lessonId])
+        @@index([userId])
+        @@index([lessonId])
+      }
+
+        // ==================== آپدیت کامل مدل Enrollment ====================
+      model Enrollment {
+        id               String             @id @default(cuid())
+        userId           String
+        user             User               @relation(fields: [userId], references: [id])
+        runId            String?
+        run              CourseRun?         @relation("RunEnrollments", fields: [runId], references: [id])
+        status           EnrollmentStatus   @default(PENDING)
+        groupId          String?
+        group            CourseGroup?       @relation(fields: [groupId], references: [id])
+        enrolledAt       DateTime           @default(now())
+        approvedAt       DateTime?
+        enrollmentMethod EnumEnrollmentMethod @default(PURCHASE)
+        expiresAt        DateTime?
+        finalScore           Float?    // نمره نهایی محاسبه‌شده (از ۰ تا Course.finalScoreOutOf)
+        finalGrade           String?   // مثلاً "A+", "عالی", "۲۰"
+        completionPercentage Int?      @default(0) // درصد تکمیل دروس
+        rankedInRun          Int?      // رتبه دانشجو در این برگزاری (Run) — اختیاری
+        enrolledById     String?
+        enrolledBy       User?              @relation("EnrolledBy", fields: [enrolledById], references: [id])
+        progressLastCalculatedAt DateTime?
+        @@index([runId, finalScore(sort: Desc)])
+        @@index([runId])
+        @@index([status])
+        @@index([enrolledAt(sort: Desc)])
+        @@index([expiresAt])
+        @@index([enrollmentMethod])
+        @@index([finalScore])
+        @@index([completionPercentage])
+      }
+      model AssignmentGrade {
+        id            String   @id @default(cuid())
+        submissionId  String   @unique
+        submission    AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+
+        score         Float
+        percentage    Float
+        weightedScore Float?
+        feedback      String?
+        gradedById    String?
+        gradedBy      User?    @relation(fields: [gradedById], references: [id])
+        gradedAt      DateTime?
+
+        createdAt     DateTime @default(now())
+        updatedAt     DateTime @updatedAt
+
+        @@index([submissionId])
+      }
+      model ExamGrade {
+        id            String   @id @default(cuid())
+        attemptId     String   @unique
+        attempt       ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+        score         Float
+        percentage    Float
+        weightedScore Float?
+        isPassed      Boolean  @default(false)
+
+        createdAt     DateTime @default(now())
+
+        @@index([attemptId])
+      }
+      model SessionAttendanceGrade {
+        id           String   @id @default(cuid())
+        attendanceId String   @unique
+        attendance   SessionAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+        points       Float    @default(0)
+        maxPoints    Float    @default(2)
+
+        @@index([attendanceId])
+      } 
+      model LessonCompletionBonus {
+        id           String   @id @default(cuid())
+        completionId String   @unique
+        completion   LessonCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
+
+        bonusPoints  Float    @default(1)
+
+        @@index([completionId])
+      }
+        enum EnumEnrollmentMethod {
+          PURCHASE // خرید عادی از سبد خرید
+          FREE // دوره رایگان یا با کد تخفیف ۱۰۰٪
+          INVITE // دعوت توسط مدرس یا کد دعوت
+          ADMIN // ثبت‌نام دستی توسط ادمین/مدرس
+          PROMOTION // کمپین تبلیغاتی یا جایزه
+          GIFT // هدیه به کاربر
+        }
+
+        model PriceHistory {
+          id         String @id @default(cuid())
+          entityType String // "Product" | "Course"
+          entityId   String
+
+          price           Int
+          oldPrice        Int?
+          discountPercent Int?
+          recordedAt      DateTime @default(now())
+
+          // رابطه با Product – نام constraint منحصر به فرد
+          product Product? @relation("ProductPriceHistory", fields: [entityId], references: [id], onDelete: Cascade, map: "fk_price_history_product")
+
+          // رابطه با Course – نام constraint منحصر به فرد
+          course Course? @relation("CoursePriceHistory", fields: [entityId], references: [id], onDelete: Cascade, map: "fk_price_history_course")
+
+          @@index([entityType, entityId])
+          @@index([recordedAt(sort: Desc)])
+          @@index([entityType, entityId, recordedAt(sort: Desc)])
+        }
+
+        // آخر فایل schema.prisma — فقط این رو داشته باش، قبلی‌ها رو پاک کن
+
+        model Setting {
+          id        Int         @id @default(autoincrement())
+          key       String      @unique
+          value     String
+          type      SettingType @default(STRING)
+          category  String      @default("theme")
+          updatedAt DateTime    @updatedAt
+          updatedBy String?
+
+          @@index([category])
+          @@map("settings") // خیلی مهمه! اسم جدول رو می‌کنیم settings (کوچک)
+        }
+
+        enum SettingType {
+          STRING
+          NUMBER
+          BOOLEAN
+          JSON
+          COLOR
+        }
+
+        // schema.prisma (اگر از Prisma استفاده می‌کنی)
+        model PasswordResetToken {
+          id        String   @id @default(uuid())
+          userId    String
+          token     String   @unique
+          expiresAt DateTime
+          createdAt DateTime @default(now())
+
+          // Relation به کاربر
+          user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+          @@index([userId])
+          @@index([token])
+        }
+
+        model VerificationToken {
+          id        String   @id @default(cuid())
+          userId    String   @unique
+          token     String   @unique
+          expiresAt DateTime
+          createdAt DateTime @default(now())
+
+          user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+          @@index([userId])
+          @@index([token])
+        }
+
+        // ==================== CONTACT MESSAGES ====================
+        model ContactMessage {
+          id        Int                  @id @default(autoincrement()) // ← تغییر کلیدی: حالا number هست
+          name      String
+          email     String
+          subject   String
+          message   String
+          ipAddress String?              @db.VarChar(45)
+          userAgent String?
+          status    ContactMessageStatus @default(PENDING)
+          replied   Boolean              @default(false)
+          createdAt DateTime             @default(now())
+          updatedAt DateTime             @updatedAt
+
+          @@index([email])
+          @@index([status])
+          @@index([createdAt(sort: Desc)])
+        }
+
+        enum ContactMessageStatus {
+          PENDING
+          READ
+          REPLIED
+          ARCHIVED
+        }
+
+        model ShippingZone {
+          id        String           @id @default(cuid())
+          name      String
+          isActive  Boolean          @default(true)
+          countries Country[]        @relation("ZoneCountries")
+          methods   ShippingMethod[] @relation("ZoneMethods")
+          createdAt DateTime         @default(now())
+          updatedAt DateTime         @updatedAt
+
+          @@unique([name])
+        }
+
+        model PickupLocation {
+          id        String             @id @default(cuid())
+          title     String
+          address   String
+          phone     String?
+          cityId    String
+          city      City               @relation(fields: [cityId], references: [id])
+          icon      PickupLocationIcon @default(CUSTOM)
+          isActive  Boolean            @default(true)
+          methods   ShippingMethod[]   @relation("PickupMethods")
+          createdAt DateTime           @default(now())
+          updatedAt DateTime           @updatedAt
+        }
+
+        // ==================== سیستم درآمد مدرس ====================
+
+        // تنظیمات کمیسیون سایت (درصد از هر فروش)
+        model PlatformCommission {
+          id         String   @id @default(cuid())
+          percentage Int      @default(20) // درصد کمیسیون سایت (مثلاً ۲۰٪)
+          isActive   Boolean  @default(true)
+          updatedAt  DateTime @updatedAt
+          updatedBy  String? // ادمین کی تغییر داده
+        }
+
+        // درخواست برداشت درآمد
+        model WithdrawalRequest {
+          id           String @id @default(cuid())
+          instructorId String
+          instructor   User   @relation("InstructorWithdrawalRequests", fields: [instructorId], references: [id])
+
+          amount  Int // مبلغ درخواست‌شده
+          method  String // مثلاً "bank_transfer", "crypto"
+          details Json // جزئیات حساب (iban, wallet و ...)
+
+          status      WithdrawalStatus @default(PENDING)
+          requestedAt DateTime         @default(now())
+          processedAt DateTime?
+          processedBy String? // ادمین کی پردازش کرده
+
+          note String? // یادداشت ادمین
+
+          @@index([instructorId])
+          @@index([status])
+          @@index([requestedAt(sort: Desc)])
+        }
+
+        enum WithdrawalStatus {
+          PENDING
+          APPROVED
+          REJECTED
+          PAID
+        }
+
+        // درآمد هر مدرس (برای داشبورد سریع)
+        model InstructorEarning {
+          id           String @id @default(cuid())
+          instructorId String @unique
+          instructor   User   @relation("InstructorEarnings", fields: [instructorId], references: [id])
+
+          totalRevenue Int @default(0) // کل فروش دوره‌ها
+          platformCut  Int @default(0) // کمیسیون سایت
+          netEarning   Int @default(0) // درآمد خالص مدرس
+          withdrawn    Int @default(0) // برداشت‌شده
+          available    Int @default(0) // موجود برای برداشت
+
+          lastCalculated DateTime?
+
+          @@index([instructorId])
+        }
+
+        // ==================== سیستم فایل‌های دوره (Course Files) — حرفه‌ای ====================
+
+        enum FileType {
+          PDF
+          VIDEO
+          AUDIO
+          IMAGE
+          DOCUMENT // doc, docx, ppt, etc.
+          ARCHIVE // zip, rar
+          OTHER
+        }
+
+        model CourseFile {
+          id       String @id @default(cuid())
+          courseId String
+          course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+          // اختیاری: فایل متعلق به بخش یا گروه
+          sectionId String?
+          section   CourseSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+          groupId   String?
+          group     CourseGroup?   @relation(fields: [groupId], references: [id])
+
+          title       String
+          description String?
+
+          url      String // لینک فایل (Cloudinary یا لوکال)
+          type     FileType @default(OTHER)
+          size     Int? // بایت
+          duration Int? // ثانیه — برای ویدیو/صوت
+
+          // سطح دسترسی
+          accessLevel FileAccessLevel @default(ENROLLED)
+
+          // کی آپلود کرده
+          uploadedBy     String
+          uploadedByUser User   @relation(fields: [uploadedBy], references: [id])
+
+          // دانلودها و بازدیدها
+          downloads FileDownload[] @relation("FileDownloads")
+          views     Int            @default(0)
+
+          isPublished Boolean @default(true)
+
+          createdAt DateTime @default(now())
+          updatedAt DateTime @updatedAt
+
+          @@index([courseId])
+          @@index([sectionId])
+          @@index([groupId])
+          @@index([uploadedBy])
+          @@index([accessLevel])
+          @@index([type])
+          @@index([isPublished])
+          @@index([createdAt(sort: Desc)])
+        }
+
+        // آمار دانلود فایل (اختیاری — برای گزارش پیشرفته)
+        model FileDownload {
+          id     String     @id @default(cuid())
+          fileId String
+          file   CourseFile @relation("FileDownloads", fields: [fileId], references: [id], onDelete: Cascade)
+
+          userId String?
+          user   User?   @relation("UserFileDownloads", fields: [userId], references: [id])
+
+          ip           String?
+          downloadedAt DateTime @default(now())
+
+          @@index([fileId])
+          @@index([userId])
+          @@index([downloadedAt(sort: Desc)])
+        }
+        // ==================== سیستم نوتیفیکیشن حرفه‌ای (برای کل سایت) ====================
+
+    enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+  ANNOUNCEMENT
+  PAYMENT
+  ENROLLMENT
+  ASSIGNMENT
+  CERTIFICATE
+  SUPPORT
+  SYSTEM
 }
 
-model Enrollment {
-  id         String           @id @default(cuid())
-  userId     String
-  user       User             @relation(fields: [userId], references: [id])
-  courseId   String
-  course     Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  status     EnrollmentStatus @default(PENDING)
-  groupId    String?
-  group      CourseGroup?     @relation(fields: [groupId], references: [id])
-  enrolledAt DateTime         @default(now())
-  approvedAt DateTime?
+    // ==================== سیستم نوتیفیکیشن حرفه‌ای و پیشرفته ====================
+  enum NotificationPriority {
+    LOW
+    MEDIUM
+    HIGH
+    URGENT
+  }
 
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
-  progress            Int     @default(0) // درصد پیشرفت
-  lastWatchedLessonId String? // آخرین درس دیده شده
-  // ←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←←
+  enum NotificationChannel {
+    IN_APP     // نمایش داخل اپ/سایت
+    PUSH       // Push Notification (Firebase, OneSignal و ...)
+    EMAIL
+    SMS
+  }
 
-  @@unique([userId, courseId])
+model NotificationChannelLog {
+  id             String              @id @default(cuid())
+  notificationId String
+  notification   Notification        @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(SENT)
+  externalId     String?             // مثلاً Firebase message ID
+  sentAt         DateTime?
+  deliveredAt    DateTime?
+  openedAt       DateTime?
+  failedReason   String?
+
+  @@unique([notificationId, channel])
+  @@index([notificationId])
+  @@index([channel])
+  @@index([status])
 }
 
-model PriceHistory {
-  id         String @id @default(cuid())
-  entityType String // "Product" | "Course"
-  entityId   String
 
-  price           Int
-  oldPrice        Int?
-  discountPercent Int?
-  recordedAt      DateTime @default(now())
 
-  // رابطه با Product – نام constraint منحصر به فرد
-  product Product? @relation("ProductPriceHistory", fields: [entityId], references: [id], onDelete: Cascade, map: "fk_price_history_product")
+  // ==================== بهبودهای سیستم نوتیفیکیشن ====================
 
-  // رابطه با Course – نام constraint منحصر به فرد
-  course Course? @relation("CoursePriceHistory", fields: [entityId], references: [id], onDelete: Cascade, map: "fk_price_history_course")
+model NotificationTemplate {
+  id              String            @id @default(cuid())
+  key             String            @unique
+  titleTemplate   Json              @default("{}") // مثلاً {"fa": "خوش آمدید {{name}}", "en": "Welcome {{name}}"}
+  bodyTemplate    Json              @default("{}")
+  richContent     Json?
+  defaultType     NotificationType  @default(INFO)
+  defaultPriority NotificationPriority @default(MEDIUM)
+  defaultChannels NotificationChannel[] @default([IN_APP])
+  variables       String[]          @default([])
+  isActive        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  @@index([entityType, entityId])
-  @@index([recordedAt(sort: Desc)])
-  @@index([entityType, entityId, recordedAt(sort: Desc)])
+  @@index([key])
+  @@index([isActive])
 }
 
-// آخر فایل schema.prisma — فقط این رو داشته باش، قبلی‌ها رو پاک کن
+// ==================== بهبود NotificationPreference ====================
+model NotificationPreference {
+  id                String               @id @default(cuid())
+  userId            String
+  user              User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type              NotificationType?
+  channels          NotificationChannel[] @default([IN_APP])
+  enabled           Boolean              @default(true)
+  quietHoursStart   String?              // "22:00"
+  quietHoursEnd     String?              // "08:00"
+  quietDays         Int[]                @default([]) // 0=یکشنبه ... 6=شنبه
+  digestMode        DigestMode?          @default(NONE)
+  mutedCourseIds    String[]             @default([])
+  mutedGroupIds     String[]             @default([])
+  mutedRunIds       String[]             @default([])
 
-model Setting {
-  id        Int         @id @default(autoincrement())
-  key       String      @unique
-  value     String
-  type      SettingType @default(STRING)
-  category  String      @default("theme")
-  updatedAt DateTime    @updatedAt
-  updatedBy String?
-
-  @@index([category])
-  @@map("settings") // خیلی مهمه! اسم جدول رو می‌کنیم settings (کوچک)
-}
-
-enum SettingType {
-  STRING
-  NUMBER
-  BOOLEAN
-  JSON
-  COLOR
-}
-
-// schema.prisma (اگر از Prisma استفاده می‌کنی)
-model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-
-  // Relation به کاربر
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  @@unique([userId, type])
   @@index([userId])
-  @@index([token])
+  @@index([type])
 }
-model VerificationToken {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  token     String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enum DigestMode {
+    NONE
+    HOURLY
+    DAILY
+    WEEKLY
+  }
 
-  @@index([userId])
-  @@index([token])
+
+
+  enum PendingNotificationStatus {
+    PENDING      
+    PROCESSING   
+    SCHEDULED   
+    SENT         
+    SKIPPED     
+    FAILED       
+    RATE_LIMITED 
+  }
+
+enum RateLimitScope {
+  GLOBAL
+  USER
+  TYPE
+  COURSE
 }
-// ==================== CONTACT MESSAGES ====================
-model ContactMessage {
-  id        Int      @id @default(autoincrement()) // ← تغییر کلیدی: حالا number هست
-  name      String
-  email     String
-  subject   String
-  message   String
-  ipAddress String?  @db.VarChar(45)
-  userAgent String?
-  status    ContactMessageStatus @default(PENDING)
-  replied   Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+model NotificationRateLimit {
+  id          String         @id @default(cuid())
+  scope       RateLimitScope
+  targetId    String?        
+  type        NotificationType?
+  priority    NotificationPriority?
+  maxPerHour  Int            @default(20)
+  maxPerDay   Int            @default(100)
+  maxPerWeek  Int            @default(500)
+  isStrict    Boolean        @default(false)
+  updatedAt   DateTime       @updatedAt
+  updatedById String?
+  updatedBy   User?          @relation("RateLimitUpdatedBy", fields: [updatedById], references: [id])  // ← اضافه شد
+
+  @@unique([scope, targetId, type, priority])
+  @@index([scope])
+  @@index([type])
+}
+
+  enum DeliveryStatus {
+    PENDING
+    SENT
+    DELIVERED
+    OPENED
+    CLICKED
+    FAILED
+    BOUNCED // مخصوص email
+  }
+
+model Notification {
+  id              String                    @id @default(cuid())
+  userId          String
+  user            User                      @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  message         String
+  body            String?
+  richContent     Json?
+  locale          String                    @default("fa")
+  type            NotificationType          @default(INFO)
+  priority        NotificationPriority      @default(MEDIUM)
+  data            Json?
+  link            String?
+  icon            String?
+  image           String?
+  isRead          Boolean                   @default(false)
+  readAt          DateTime?
+  openedAt        DateTime?
+  clickedAt       DateTime?
+  isDeleted       Boolean                   @default(false)
+  deletedAt       DateTime?
+  isDigest        Boolean                   @default(false)
+  digestItemsCount Int?
+ primaryActionId   String? @unique
+  secondaryActionId String? @unique
+  primaryAction     NotificationAction? @relation("NotificationPrimaryAction", fields: [primaryActionId], references: [id], onDelete: SetNull)
+  secondaryAction   NotificationAction? @relation("NotificationSecondaryAction", fields: [secondaryActionId], references: [id], onDelete: SetNull)
+  channelLogs     NotificationChannelLog[]
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+groupId String?
+  group   CourseGroup? @relation("GroupNotifications", fields: [groupId], references: [id], onDelete: SetNull)
+
+  runId String?
+  run   CourseRun?   @relation("RunNotifications", fields: [runId], references: [id], onDelete: SetNull)
+
+  sessionId String?
+  session   ClassSession? @relation("SessionNotifications", fields: [sessionId], references: [id], onDelete: SetNull)
+
+  sentById String?
+  sentBy   User?        @relation("SentNotifications", fields: [sentById], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, isRead])
+  @@index([userId, type])
+  @@index([type, priority])
+  @@index([isDeleted])
+  @@index([groupId])
+  @@index([runId])
+}
+model NotificationAction {
+  id        String @id @default(cuid())
+  notificationId String
+
+
+  label String
+  url   String
+  type  ActionType @default(LINK)
+  icon  String?
+
+  primaryOf   Notification? @relation("NotificationPrimaryAction")
+  secondaryOf Notification? @relation("NotificationSecondaryAction")
+
+  @@index([notificationId])
+}
+
+enum ActionType {
+  LINK
+  DISMISS
+  REPLY     // برای آینده: پاسخ سریع
+  MARK_AS_READ
+  CUSTOM
+}
+    enum DiscountType {
+      PERCENT              // درصدی
+      FIXED                // مبلغ ثابت
+      BUY_X_GET_Y          // خرید X بگیر Y (جدید)
+      BUNDLE               // بسته تخفیفی (جدید)
+      FREE_SHIPPING        // ارسال رایگان (جدید)
+    }
+
+    enum DiscountScope {
+      ALL
+      SPECIFIC_COURSES
+      SPECIFIC_PRODUCTS
+      CATEGORIES
+      FIRST_PURCHASE
+      MINIMUM_AMOUNT
+      BUNDLE_ITEMS         // فقط برای آیتم‌های خاص در bundle (جدید)
+    }
+
+        enum DiscountApplyTo {
+          COURSES_ONLY
+          PRODUCTS_ONLY
+          BOTH
+        }
+
+        enum DiscountUsageLimitType {
+          UNLIMITED
+          TOTAL_LIMIT      
+          ONCE_PER_USER     
+          DAILY_LIMIT       
+        }
+
+        // ==================== مدل اصلی Discount ====================
+    enum CartShareMode {
+      VIEW_ONLY    
+      EDIT         
+      CHECKOUT    
+    }
+
+    model CartShare {
+      id String @id @default(cuid())
+      cartId String
+      cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+
+      token String @unique @default(cuid())
+      code String? @unique
+      mode CartShareMode @default(VIEW_ONLY)
+
+      password String?
+      expiresAt DateTime?
+      maxUses Int?
+      usedCount Int @default(0)
+
+      sharedById String
+      sharedBy User @relation("SharedCarts", fields: [sharedById], references: [id])
+
+      viewedCount Int @default(0)
+      lastAccessedAt DateTime?
+
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+      @@index([token])
+      @@index([code])
+      @@index([cartId])
+      @@index([expiresAt])
+      @@index([sharedById])
+    }
+    model Discount {
+      id String @id @default(cuid())
+      code String @unique
+      title String
+      description String?
+      type DiscountType @default(PERCENT)
+      value Int
+      scope DiscountScope @default(SPECIFIC_COURSES)
+      applyTo DiscountApplyTo @default(BOTH)
+
+      // فیلدهای Bundle
+      buyQuantity Int?
+      getQuantity Int?
+      getDiscountPercent Int? @default(100)
+      bundleItems Json?
+      bundlePrice Int?
+      bundleDiscountPercent Int?
+
+      // stacking
+      allowStacking Boolean @default(false)
+      stackPriority Int @default(0)
+      maxStackableWith Int?
+      discountableType String
+      discountableId   String
+      @@index([discountableType, discountableId])
+      // روابط
+      courses Course[] @relation("CourseDiscounts")
+      products Product[] @relation("ProductDiscounts")
+      categories Category[] @relation("DiscountCategories")
+
+      // اضافه کردن رابطه معکوس برای Bundle در سبد
+      bundleApplications CartBundleApplication[]
+
+      // بقیه فیلدها
+      minimumAmount Int?
+      maximumAmount Int?
+      usageLimitType DiscountUsageLimitType @default(UNLIMITED)
+      usageLimit Int?
+      dailyLimit Int?
+      usedCount Int @default(0)
+      oncePerUser Boolean @default(true)
+      startsAt DateTime?
+      endsAt DateTime?
+      isActive Boolean @default(true)
+      createdById String
+      createdBy User @relation("CreatedDiscounts", fields: [createdById], references: [id])
+
+      usages DiscountUsage[]
+      cartApplications CartAppliedDiscount[]
+      orderApplications OrderAppliedDiscount[]
+
+      createdAt DateTime @default(now())
+      updatedAt DateTime @updatedAt
+
+      @@index([code])
+      @@index([isActive])
+      @@index([type])
+      @@index([scope])
+      @@index([allowStacking])
+      @@index([stackPriority(sort: Desc)])
+    }
+
+    // آیتم‌های بسته در سبد — وقتی کاربر همه آیتم‌های یک bundle رو داشته باشه، تخفیف اعمال میشه
+    model CartBundleApplication {
+      id String @id @default(cuid())
+      cartId String
+      cart Cart @relation(fields: [cartId], references: [id], onDelete: Cascade)
+      discountId String
+      discount Discount @relation(fields: [discountId], references: [id])
+      
+      // وضعیت اعمال
+      isEligible Boolean @default(false)     // آیا همه آیتم‌های لازم در سبد هست؟
+      isApplied Boolean @default(false)      // آیا تخفیف اعمال شده؟
+      missingItems Json?                      // اگر کامل نیست، کدوم آیتم‌ها کمه
+      amountSaved Int @default(0)            // مبلغ صرفه‌جویی شده با این بسته
+      appliedAt DateTime?
+
+      @@unique([cartId, discountId])
+      @@index([cartId])
+      @@index([discountId])
+      @@index([isApplied])
+    }
+    model DiscountUsage {
+      id String @id @default(cuid())
+      discountId String
+      discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+      userId String
+      user User @relation("UserDiscountUsages", fields: [userId], references: [id], onDelete: Cascade)
+      orderId String
+      order Order @relation("OrderDiscountUsages", fields: [orderId], references: [id], onDelete: Cascade) // این خط قبلاً بود
+
+      amountSaved Int
+      appliedAt DateTime @default(now())
+
+
+      @@index([discountId])
+      @@index([userId])
+      @@index([orderId])
+      @@index([appliedAt])
+    }
+      model CoursePrerequisite {
+        id          String @id @default(cuid())
+        courseId    String
+        course      Course @relation("CoursePrerequisites", fields: [courseId], references: [id], onDelete: Cascade)
+        title       String
+        description String?
+        order       Int    @default(0)
+
+        @@index([courseId])
+        @@index([order])
+      }
+
+      model CourseLearningOutcome {
+        id          String @id @default(cuid())
+        courseId    String
+        course      Course @relation("CourseLearningOutcomes", fields: [courseId], references: [id], onDelete: Cascade)
+        title       String
+        description String?
+        order       Int    @default(0)
+
+        @@index([courseId])
+        @@index([order])
+      }
+
+      // ==================== سیستم کوئیز حرفه‌ای با Attempt و نمره‌دهی ====================
+      model QuizAttempt {
+        id          String    @id @default(cuid())
+        quizId      String
+        quiz        Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+        userId      String
+        user        User      @relation("QuizAttempts", fields: [userId], references: [id], onDelete: Cascade)
+        startedAt   DateTime  @default(now())
+        submittedAt DateTime?
+        score       Float?
+        maxScore    Float     // محاسبه شده از مجموع score سوالات
+        percentage  Float?
+        isPassed    Boolean?
+        attemptNumber Int     @default(1)
+        answers     QuizAttemptAnswer[]
+        grade       QuizGrade?
+
+        @@unique([quizId, userId, attemptNumber])
+        @@index([quizId])
+        @@index([userId])
+        @@index([submittedAt])
+      }
+
+      model QuizAttemptAnswer {
+        id           String      @id @default(cuid())
+        attemptId    String
+        attempt      QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+        questionId   String
+        question     QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+        selectedAnswer String?   // برای MCQ/MULTIPLE/TF
+        textAnswer   String?   // برای SHORT_ANSWER
+        isCorrect    Boolean?
+        score        Float?
+
+        @@unique([attemptId, questionId])
+        @@index([attemptId])
+        @@index([questionId])
+      }
+
+      model QuizGrade {
+        id           String      @id @default(cuid())
+        attemptId    String      @unique
+        attempt      QuizAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+        score        Float
+        percentage   Float
+        weightedScore Float?     // اگر کوئیز وزن خاصی در GradeCategory داشته باشد
+        gradedAt     DateTime    @default(now())
+
+        @@index([attemptId])
+      }
+
+      // ==================== بهبود: rubricScores به رابطه واقعی تبدیل شد ====================
+      model AssignmentRubricScore {
+        id            String               @id @default(cuid())
+        submissionId  String
+        submission    AssignmentSubmission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+        rubricId      String
+        rubric        AssignmentRubric     @relation(fields: [rubricId], references: [id], onDelete: Cascade)
+        score         Float
+        comment       String?
+
+        @@unique([submissionId, rubricId])
+        @@index([submissionId])
+        @@index([rubricId])
+      }
+
+      // ==================== سیستم Discussion / Q&A / Forum داخل دوره ====================
+      model Discussion {
+        id            String         @id @default(cuid())
+        courseId      String
+        course        Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+        runId         String?
+        run           CourseRun?     @relation(fields: [runId], references: [id])
+        title         String
+        description   String?
+        isPinned      Boolean        @default(false)
+        isLocked      Boolean        @default(false)
+        isAnnouncement Boolean       @default(false) // فقط مدرس می‌تواند بنویسد
+        createdById   String
+        createdBy     User           @relation("CreatedDiscussions", fields: [createdById], references: [id])
+        posts         DiscussionPost[]
+        subscribers   DiscussionSubscription[]
+        createdAt     DateTime       @default(now())
+        updatedAt     DateTime       @updatedAt
+
+        @@index([courseId])
+        @@index([runId])
+        @@index([isPinned])
+        @@index([isAnnouncement])
+      }
+
+      model DiscussionPost {
+        id             String               @id @default(cuid())
+        discussionId   String
+        discussion     Discussion           @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+        parentId       String?
+        parent         DiscussionPost?      @relation("PostReplies", fields: [parentId], references: [id])
+        replies        DiscussionPost[]     @relation("PostReplies")
+        authorId       String
+        author         User                 @relation("DiscussionPosts", fields: [authorId], references: [id])
+        content        String
+        isApproved     Boolean              @default(true) // برای اعلامیه‌ها خودکار تأیید
+        reactions      DiscussionPostReaction[]
+        createdAt      DateTime             @default(now())
+        updatedAt      DateTime             @updatedAt
+
+        @@index([discussionId])
+        @@index([parentId])
+        @@index([authorId])
+        @@index([createdAt(sort: Desc)])
+      }
+
+      model DiscussionPostReaction {
+        id         String         @id @default(cuid())
+        postId     String
+        post       DiscussionPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+        userId     String
+        user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+        type       ReactionType   // از ReactionType موجود استفاده می‌کنیم
+
+        @@unique([postId, userId, type])
+        @@index([postId])
+        @@index([userId])
+      }
+
+      model DiscussionSubscription {
+        id           String     @id @default(cuid())
+        discussionId String
+        discussion   Discussion @relation(fields: [discussionId], references: [id], onDelete: Cascade)
+        userId       String
+        user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+        @@unique([discussionId, userId])
+      }
+      enum SubscriptionStatus {
+      ACTIVE
+      PAUSED
+      CANCELLED
+      EXPIRED
+      TRIAL
+    }
+
+    enum BillingPeriod {
+      MONTHLY
+      QUARTERLY
+      YEARLY
+    }
+
+    model SubscriptionPlan {
+      subscriptions Subscription[]
+      id          String    @id @default(cuid())
+      title       String
+      description String?
+      period      BillingPeriod
+      trialDays   Int       @default(0)
+      price       Int
+      currency    String    @default("IRR")
+      isActive    Boolean   @default(true)
+
+      productId   String?
+      product     Product?  @relation(fields: [productId], references: [id])
+      courseId    String?
+      course      Course?   @relation(fields: [courseId], references: [id])
+
+      // رابطه معکوس جدید
+      cartItems   CartItem[]
+
+      createdAt   DateTime  @default(now())
+      updatedAt   DateTime  @updatedAt
+
+      @@unique([productId, period])
+      @@unique([courseId, period])
+    }
+
+    model Subscription {
+      id            String            @id @default(cuid())
+      userId        String
+      user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+      planId        String
+      plan          SubscriptionPlan  @relation(fields: [planId], references: [id])
+      status        SubscriptionStatus @default(TRIAL)
+      startsAt      DateTime
+      endsAt        DateTime?
+      nextBillingAt DateTime?
+      cartItemId    String?           @unique
+      orderItemId   String?           @unique
+      createdAt     DateTime          @default(now())
+      updatedAt     DateTime          @updatedAt
+  paymentAttempts        SubscriptionPaymentAttempt[]
+    events                 SubscriptionEvent[]
+      @@index([userId])
+      @@index([status])
+      @@index([nextBillingAt])
+    }
+
+  model VendorEarning {
+    id            String   @id @default(cuid())
+    sellerId      String   @unique // User.id که نقش SELLER یا INSTRUCTOR دارد
+    seller        User     @relation("VendorEarnings", fields: [sellerId], references: [id])
+    totalRevenue  BigInt   @default(0)
+    platformCut   BigInt   @default(0)
+    netEarning    BigInt   @default(0)
+    withdrawn     BigInt   @default(0)
+    available     BigInt   @default(0)
+    lastCalculated DateTime?
+    @@index([sellerId])
+  }
+  model SubscriptionPaymentAttempt {
+    id               String   @id @default(cuid())
+    subscriptionId   String
+    subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+    amount           Int
+    currency         String   @default("IRR")
+    status           PaymentStatus @default(PENDING)
+    attemptNumber    Int      @default(1)
+    nextRetryAt      DateTime?
+    failureReason    String?
+    paymentMethod    String?
+    gatewayResponse  Json?
+    createdAt        DateTime @default(now())
+    @@index([subscriptionId])
+    @@index([status])
+    @@index([nextRetryAt])
+  }
+
+  model SubscriptionEvent {
+    id               String   @id @default(cuid())
+    subscriptionId   String
+    subscription     Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+    type             SubscriptionEventType
+    reason           String?
+    metadata         Json?
+    createdAt        DateTime @default(now())
+    @@index([subscriptionId])
+    @@index([type])
+    @@index([createdAt(sort: Desc)])
+  }
+
+  enum SubscriptionEventType {
+    RENEWAL_SUCCESS
+    RENEWAL_FAILED
+    PAYMENT_RETRY
+    DOWNGRADE
+    UPGRADE
+    CANCELLATION
+    REACTIVATION
+    EXPIRATION
+    DUNNING_EMAIL_SENT
+  }
+  // ==================== تاریخچه تغییرات نقش کاربران (برای Audit) ====================
+  model UserRoleHistory {
+    id          String   @id @default(cuid())
+    
+    // کاربری که نقشش تغییر کرده
+    userId      String
+    user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    
+    // نقش قبلی و جدید
+    oldRole     String?  // اگر حذف شده باشه، newRole null و oldRole پر می‌شه
+    newRole     String?  // اگر اضافه شده باشه، oldRole null و newRole پر می‌شه
+    
+    // نوع عملیات
+    action      UserRoleChangeAction
+    
+    // ادمینی که تغییر رو اعمال کرده
+    changedById String?
+    changedBy   User?    @relation("RoleChangeBy", fields: [changedById], references: [id])
+    
+    // دلیل تغییر (اختیاری - مثلاً "ارتقا به مدرس"، "حذف دسترسی ادمین")
+    reason      String?
+    
+    // زمان تغییر
+    changedAt   DateTime @default(now())
+    
+    // ایندکس‌ها برای جستجو و گزارش‌گیری سریع
+    @@index([userId])
+    @@index([changedById])
+    @@index([action])
+    @@index([changedAt(sort: Desc)])
+    @@index([userId, changedAt(sort: Desc)])
+  }
+  enum UserRoleChangeAction {
+    GRANTED      // نقش اضافه شده
+    REVOKED      // نقش حذف شده
+    CREATED      // اولین نقش‌ها هنگام ساخت کاربر
+    REPLACED     // تغییر نقش (مثلاً از STUDENT به INSTRUCTOR)
+  }
+
+  enum RecurringPattern {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM // برای cron-like
+}
+
+enum ScheduledStatus {
+  PENDING
+  PROCESSING
+  SENT
+  CANCELLED
+  FAILED
+}
+
+model ScheduledNotification {
+  id              String            @id @default(cuid())
+  templateId      String?
+    type            NotificationType  @default(INFO)
+  priority        NotificationPriority @default(MEDIUM)
+  title           Json              // چندزبانه
+  message         Json
+  data            Json?             
+  targetUsers     Json?            
+  targetCourseId  String?
+  targetRunId     String?
+  targetGroupId   String?
+  scheduledAt     DateTime
+  recurring       RecurringPattern?
+  recurringUntil  DateTime?
+  status          ScheduledStatus   @default(PENDING)
+  createdById     String?
+  createdBy       User?             @relation(fields: [createdById], references: [id])
+  createdAt       DateTime          @default(now())
+
+  @@index([scheduledAt])
+  @@index([status])
+  @@index([targetCourseId])
+  @@index([targetRunId])
+}
+
+// جایگزین مدل BlogSubscriber فعلی با این نسخه اصلاح‌شده
+model BlogSubscriber {
+  id            String                @id @default(cuid())
+  email         String                @unique
+  name          String?
+  subscribedAt  DateTime              @default(now())
+  unsubscribedAt DateTime?
+  isActive      Boolean               @default(true)
+  source        String?               // e.g., "post_footer", "popup", "import"
+  segments      String[]              @default([])  // e.g., ["premium", "weekly"]
+  
+  // رابطه many-to-many با Newsletter از طریق جدول واسط
+  newsletterSubscriptions NewsletterSubscription[]
+  
+  // لاگ‌های ارسال
+  sendLogs      NewsletterSendLog[]
+  
+  // اگر subscription پولی داشته باشه
+  blogSubscriptions BlogSubscription[]
+  
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
 
   @@index([email])
-  @@index([status])
+  @@index([isActive])
   @@index([createdAt(sort: Desc)])
 }
 
-enum ContactMessageStatus {
-  PENDING
-  READ
-  REPLIED
-  ARCHIVED
+// جدول واسط: کدام subscriber به کدام newsletter سابسکریب کرده
+model NewsletterSubscription {
+  id             String   @id @default(cuid())
+  subscriberId   String
+  subscriber     BlogSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  
+  newsletterId   String
+  newsletter     Newsletter     @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  
+  subscribedAt   DateTime @default(now())
+  unsubscribedAt DateTime?
+  preference     String?  // e.g., "html", "plain_text"
+  
+  @@unique([subscriberId, newsletterId])
+  @@index([newsletterId])
+  @@index([subscriberId])
+  @@index([unsubscribedAt])
 }
-model ShippingZone {
-  id        String   @id @default(cuid())
-  name      String
-  isActive  Boolean  @default(true)
-  countries Country[] @relation("ZoneCountries")
-  methods   ShippingMethod[] @relation("ZoneMethods")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
-  @@unique([name])
+// مدل Newsletter بدون تغییر (فقط رابطه اضافه شد)
+model Newsletter {
+  id              String   @id @default(cuid())
+  title           String
+  subject         String
+  content         String
+  postId      String?  @unique  
+  post            Post?    @relation(fields: [postId], references: [id], onDelete: SetNull)
+
+  scheduledAt     DateTime?
+  sentAt          DateTime?
+  status          NewsletterStatus @default(DRAFT)
+
+  subscribers     NewsletterSubscription[]
+  sendLogs        NewsletterSendLog[]
+
+  createdById     String?
+  createdBy       User?    @relation(fields: [createdById], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+enum NewsletterStatus {
+  DRAFT
+  SCHEDULED
+  SENT
+  FAILED
+  CANCELLED
 }
 
-model PickupLocation {
-  id        String   @id @default(cuid())
-  title     String
-  address   String
-  phone     String?
-  cityId    String
-  city      City     @relation(fields: [cityId], references: [id])
-  icon      PickupLocationIcon @default(CUSTOM)
-  isActive  Boolean  @default(true)
-  methods   ShippingMethod[] @relation("PickupMethods")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+// لاگ ارسال به هر subscriber
+model NewsletterSendLog {
+  id             String   @id @default(cuid())
+  newsletterId   String
+  newsletter     Newsletter @relation(fields: [newsletterId], references: [id], onDelete: Cascade)
+  
+  subscriberId   String
+  subscriber     BlogSubscriber @relation(fields: [subscriberId], references: [id], onDelete: Cascade)
+  
+  sentAt         DateTime?
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  clicks         Json?    // [{ url: "...", count: 2 }, ...]
+  device         String?  // "desktop", "mobile"
+  location       String?  // city/country از IP
+  
+  @@unique([newsletterId, subscriberId])
+  @@index([newsletterId])
+  @@index([subscriberId])
+  @@index([sentAt(sort: Desc)])
+}
+
+model BlogMembershipTier {
+  id          String   @id @default(cuid())
+  title       String   // e.g., "Premium", "Founding"
+  price       Int      // ماهانه به کوچک‌ترین واحد
+  currency    String   @default("IRR")
+  benefits    Json?    // e.g., ["access to premium posts", "no ads"]
+  subscriptions BlogSubscription[]
+}
+
+model BlogSubscription {
+  id            String   @id @default(cuid())
+  userId        String?
+  user          User?    @relation(fields: [userId], references: [id])
+  subscriberId  String?
+  subscriber    BlogSubscriber? @relation(fields: [subscriberId], references: [id])
+  tierId        String
+  tier          BlogMembershipTier @relation(fields: [tierId], references: [id])
+  status        SubscriptionStatus @default(ACTIVE)
+  startsAt      DateTime
+  endsAt        DateTime?
+  nextBillingAt DateTime?
+  stripeId      String?
+
+  @@unique([userId, tierId])        // یک کاربر فقط یک subscription به یک tier داشته باشه
+  @@unique([subscriberId, tierId])  // برای guest subscriber هم
+}
+
+
+
+
+model BlogReferral {
+  id            String   @id @default(cuid())
+  referrerId    String   // user یا subscriber که refer کرده
+  referredEmail String
+  rewardTier    Int      @default(0)  // چند referral تا reward بعدی
+  rewardedAt    DateTime?
+  rewardType    String?  // e.g., "free_month", "exclusive_post"
+}
+model PostAnalytics {
+  id            String   @id @default(cuid())
+  postId        String
+  post          Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  
+  uniqueViews   Int      @default(0)     // کاربران منحصر به فرد
+  totalViews    Int      @default(0)
+  avgTimeOnPage Int      @default(0)     // ثانیه
+  bounceRate    Float?                  // درصد
+  referrals     Json?                   // { source: "twitter", count: 10 }
+  
+  subscriberConversions Int @default(0) // چند نفر بعد از این پست subscribe کردن
+  revenueGenerated      BigInt @default(0)   // درآمد مستقیم از این پست
+  
+  dailyStats    PostDailyStat[]
+  
+  @@unique([postId])
+  @@index([postId])
+}
+
+model PostDailyStat {
+  id         String @id @default(cuid())
+  analyticsId String
+  analytics  PostAnalytics @relation(fields: [analyticsId], references: [id], onDelete: Cascade)
+  date       DateTime
+  views      Int    @default(0)
+  uniqueViews Int   @default(0)
+  conversions Int   @default(0)
+  @@unique([analyticsId, date])
+}
+
+// پاداش‌های تعریف‌شده برای هر سطح referral
+model ReferralReward {
+  id          String   @id @default(cuid())
+  tier        Int
+  rewardType  String
+  rewardValue Int
+  description String?
+  isActive    Boolean  @default(true)
+
+  // رابطه معکوس: کدام referralها از این پاداش استفاده کردن
+  referrals   Referral[]
+
+  @@unique([tier])
+  @@index([isActive])
+}
+
+// لاگ referralها — کی کی رو معرفی کرده
+model Referral {
+  id             String   @id @default(cuid())
+  referrerId     String   // کاربری که معرفی کرده
+  referrer       User     @relation("UserReferralsMade", fields: [referrerId], references: [id])
+  referredUserId String?  // اگر کاربر ثبت‌نام کرده
+  referredUser   User?    @relation("UserReferredBy", fields: [referredUserId], references: [id])
+  referredEmail  String   // ایمیل معرفی‌شده (اگر هنوز ثبت‌نام نکرده)
+  
+  // وضعیت
+  status         ReferralStatus @default(PENDING) // PENDING, REGISTERED, SUBSCRIBED, REWARDED
+  subscribedAt   DateTime?
+  rewardedAt     DateTime?
+  
+  // پاداش داده‌شده
+  rewardId       String?
+  reward         ReferralReward? @relation(fields: [rewardId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  
+  @@unique([referrerId, referredEmail])
+  @@index([referrerId])
+  @@index([status])
+  @@index([rewardedAt])
+}
+
+enum ReferralStatus {
+  PENDING      // فقط ایمیل معرفی شده
+  REGISTERED   // کاربر ثبت‌نام کرده
+  SUBSCRIBED   // کاربر subscription پولی گرفته
+  REWARDED     // پاداش داده شده
+}
+
+// leaderboard ماهانه/سالانه (denormalized برای سرعت)
+model ReferralLeaderboard {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  period     String   // مثلاً "2026-01" یا "2026"
+  referrals  Int      @default(0)
+  rewards    Int      @default(0)
+  rank       Int?
+  
+  @@unique([userId, period])
+  @@index([period, referrals(sort: Desc)])
 }

@@ -6,7 +6,6 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { FiCheckCircle, FiLock, FiPlayCircle, FiClock, FiFileText, FiDownload, FiAward, FiMessageCircle } from "react-icons/fi";
-import { format } from "date-fns-jalali";
 
 
 export default async function LearningRoom({ params }: { params: { id: string } }) {

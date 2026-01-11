@@ -27,6 +27,7 @@ const namespaces = [
   "admin",
   "dashboard",
   "branding",
+  "users",
 ] as const;
 
 type Locale = (typeof locales)[number];

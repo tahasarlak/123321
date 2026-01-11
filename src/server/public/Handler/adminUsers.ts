@@ -7,8 +7,13 @@ import {
   createUserByAdminSchema,
   updateUserByAdminSchema,
 } from "@/lib/validations/adminUsers";
-
 import type { AdminUsersResult } from "@/types/adminUsers";
+
+const PAGE_SIZE = 12;
+
+const CREATE_SUCCESS = "کاربر با موفقیت ایجاد شد.";
+const UPDATE_SUCCESS = "تغییرات با موفقیت اعمال شد.";
+const DELETE_SUCCESS = "کاربر با موفقیت حذف شد.";
 
 async function hasAdminAccess(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
@@ -18,27 +23,99 @@ async function hasAdminAccess(userId: string): Promise<boolean> {
   return user?.roles.some((r) => ["ADMIN", "SUPERADMIN"].includes(r.role)) ?? false;
 }
 
-// پیام‌های ثابت و آرامش‌بخش (همان‌هایی که در routeها استفاده می‌کنیم)
-const CREATE_SUCCESS = "کاربر با موفقیت ایجاد شد.";
-const UPDATE_SUCCESS = "تغییرات با موفقیت اعمال شد.";
-const DELETE_SUCCESS = "درخواست حذف کاربر با موفقیت پردازش شد.";
+// لیست کاربران + آمار نقش‌ها
+export async function handleFetchUsers({
+  search = "",
+  page = 1,
+  searchParams = {},
+}: {
+  search?: string;
+  page?: number;
+  searchParams?: Record<string, string | string[] | undefined>;
+}): Promise<any> {
+  const roleFilter = (searchParams?.role as string)?.toUpperCase();
 
-export async function handleCreateUser(
-  data: unknown,
-  adminUserId: string
-): Promise<AdminUsersResult> {
-  // چک دسترسی — اما حتی اگر نداشته باشه، success: true برمی‌گردونیم
-  const isAdmin = await hasAdminAccess(adminUserId);
+  const where: any = {};
+  if (roleFilter && roleFilter !== "ALL") {
+    where.roles = { some: { role: roleFilter } };
+  }
 
-  // validation
+  if (search.trim()) {
+    const trimmed = search.trim();
+    where.OR = [
+      { name: { contains: trimmed, mode: "insensitive" } },
+      { email: { contains: trimmed, mode: "insensitive" } },
+      { phone: { contains: trimmed, mode: "insensitive" } },
+    ];
+  }
+
+  const [usersRaw, totalItems, roleCounts] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: {
+        roles: { select: { role: true } },
+        university: { select: { name: true } },
+        major: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.user.count({ where }),
+    prisma.userRole.groupBy({
+      by: ["role"],
+      _count: { role: true },
+    }),
+  ]);
+
+  const items = usersRaw.map((user) => ({
+    ...user,
+    roles: user.roles.map((r) => r.role),
+  }));
+
+  const roleMap: Record<string, number> = {
+    SUPERADMIN: 0,
+    ADMIN: 0,
+    INSTRUCTOR: 0,
+    BLOG_AUTHOR: 0,
+    USER: 0,
+  };
+
+  roleCounts.forEach(({ role, _count }) => {
+    if (role in roleMap) roleMap[role] = _count.role;
+  });
+
+  const stats = Object.entries(roleMap).map(([key, count]) => ({ key, count }));
+
+  return { items, totalItems, stats };
+}
+
+export async function handleFetchUserById(id: string) {
+  const user = await prisma.user.findUnique({
+    where: { id },
+    include: {
+      roles: { select: { role: true } },
+      university: { select: { id: true, name: true } },
+      major: { select: { id: true, name: true } },
+    },
+  });
+
+  if (!user) return null;
+
+  return {
+    ...user,
+    roles: user.roles.map((r) => r.role),
+  };
+}
+
+export async function handleCreateUser(data: unknown, adminUserId: string): Promise<AdminUsersResult> {
+  if (!(await hasAdminAccess(adminUserId))) {
+    return { success: false, message: "دسترسی ممنوع" };
+  }
+
   const parsed = createUserByAdminSchema.safeParse(data);
-  if (!parsed.success || !isAdmin) {
-    // هیچ اطلاعاتی لو نمی‌دیم
-    return {
-      success: true,
-      message: CREATE_SUCCESS,
-      // user برنمی‌گردونیم اگر خطا باشه
-    };
+  if (!parsed.success) {
+    return { success: false, message: "اطلاعات ورودی نامعتبر است" };
   }
 
   const {
@@ -104,14 +181,13 @@ export async function handleCreateUser(
     },
   });
 
-  // فقط اطلاعات ضروری و امن برمی‌گردونیم
   return {
     success: true,
     message: CREATE_SUCCESS,
     user: {
       id: newUser.id,
       name: newUser.name,
-      email: newUser.email, // در route ماسک می‌شه
+      email: newUser.email,
       phone: newUser.phone,
       createdAt: newUser.createdAt,
       roles: newUser.roles.map((r) => r.role),
@@ -124,11 +200,14 @@ export async function handleUpdateUser(
   adminUserId: string,
   targetUserId: string
 ): Promise<AdminUsersResult> {
-  const isAdmin = await hasAdminAccess(adminUserId);
+  if (!(await hasAdminAccess(adminUserId))) {
+    return { success: false, message: "دسترسی ممنوع" };
+  }
 
   const parsed = updateUserByAdminSchema.safeParse(data);
-  if (!parsed.success || !isAdmin) {
-    return { success: true, message: UPDATE_SUCCESS };
+  if (!parsed.success) {
+    console.log("Validation errors:", parsed.error.format()); 
+    return { success: false, message: "اطلاعات ورودی نامعتبر است" };
   }
 
   const {
@@ -178,34 +257,93 @@ export async function handleUpdateUser(
     updateData.password = await bcrypt.hash(password, 12);
   }
 
-await prisma.user.update({
-  where: { id: targetUserId },
-  data: { deletedAt: new Date(), isBanned: true },
-});
+  await prisma.$transaction(async (tx) => {
+    await tx.user.update({
+      where: { id: targetUserId },
+      data: updateData,
+    });
 
-  // بروزرسانی نقش‌ها
-  await prisma.userRole.deleteMany({ where: { userId: targetUserId } });
-  await prisma.userRole.createMany({
-    data: roles.map((role) => ({ userId: targetUserId, role })),
-    skipDuplicates: true,
+    await tx.userRole.deleteMany({ where: { userId: targetUserId } });
+    await tx.userRole.createMany({
+      data: roles.map((role) => ({ userId: targetUserId, role })),
+      skipDuplicates: true,
+    });
   });
 
   return { success: true, message: UPDATE_SUCCESS };
 }
 
-export async function handleDeleteUser(
-  adminUserId: string,
-  targetUserId: string
-): Promise<AdminUsersResult> {
-  const isAdmin = await hasAdminAccess(adminUserId);
-
-  // حتی اگر دسترسی نداشته باشه، خودش باشه یا کاربر وجود نداشته باشه → success: true
-  if (!isAdmin || adminUserId === targetUserId) {
-    return { success: true, message: DELETE_SUCCESS };
+export async function handleDeleteUser(adminUserId: string, targetUserId: string): Promise<AdminUsersResult> {
+  if (!(await hasAdminAccess(adminUserId)) || adminUserId === targetUserId) {
+    return { success: false, message: "دسترسی ممنوع" };
   }
 
-  // اگر کاربر وجود نداشته باشه، Prisma خطا می‌ده → در route catch می‌شه
   await prisma.user.delete({ where: { id: targetUserId } });
 
   return { success: true, message: DELETE_SUCCESS };
+}
+
+export async function handleBulkBanUsers(selectedIds: string[], action: "ban" | "unban"): Promise<any> {
+  if (!selectedIds.length) {
+    return { success: false, message: "هیچ کاربری انتخاب نشده است." };
+  }
+
+  const isBanned = action === "ban";
+
+  await prisma.user.updateMany({
+    where: { id: { in: selectedIds } },
+    data: { isBanned },
+  });
+
+  return {
+    success: true,
+    message: isBanned
+      ? `${selectedIds.length} کاربر مسدود شدند`
+      : `${selectedIds.length} کاربر آزاد شدند`,
+  };
+}
+
+export async function handleExportUsersCsv(): Promise<string> {
+  const allUsers = await prisma.user.findMany({
+    include: {
+      roles: { select: { role: true } },
+      university: true,
+      major: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const headers = [
+    "نام",
+    "ایمیل",
+    "شماره دانشجویی",
+    "نقش‌ها",
+    "دانشگاه",
+    "رشته",
+    "وضعیت حساب",
+    "تاریخ ثبت‌نام",
+  ];
+
+  const rows = allUsers.map((u) => {
+    const roles = u.roles.map((r) => r.role).join("، ");
+    return [
+      u.name || "-",
+      u.email,
+      u.studentId || "-",
+      roles || "-",
+      u.university?.name || "-",
+      u.major?.name || "-",
+      u.isBanned ? "مسدود" : "فعال",
+      new Date(u.createdAt).toLocaleDateString("fa-IR"),
+    ];
+  });
+
+  const csvLines = [
+    headers.join(","),
+    ...rows.map((row) =>
+      row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+    ),
+  ].join("\n");
+
+  return `\uFEFF${csvLines}`;
 }

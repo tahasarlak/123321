@@ -89,7 +89,7 @@ export const createEditAction = <T extends { id: string }>(
   label: "ویرایش",
   icon: Edit3,
   ...COMMON_CLASSES.edit,
-  href: `/dashboard/admin/${pathPrefix}/edit/${item.id}`,
+  href: `/dashboard/admin/${pathPrefix}/${item.id}`,
   onClick: () => helpers?.router?.push(`/dashboard/admin/${pathPrefix}/edit/${item.id}`),
 });
 
@@ -164,3 +164,42 @@ export const createOrderDetailsAction = (
   href: `/dashboard/admin/orders/${order.id}`,
   onClick: () => helpers?.router?.push(`/dashboard/admin/orders/${order.id}`),
 });
+
+
+
+export const createCustomAction = <T>(
+  {
+    label,
+    icon,
+    colorClass = "text-blue-600 bg-blue-500/10",
+    hoverBgClass = "hover:bg-blue-500/20",
+    hoverRingClass = "hover:ring-blue-500/30",
+    rippleClass = "bg-blue-500/20",
+    condition = true,
+    onClick,
+    href,
+  }: {
+    label: string;
+    icon: any;
+    colorClass?: string;
+    hoverBgClass?: string;
+    hoverRingClass?: string;
+    rippleClass?: string;
+    condition?: boolean;
+    onClick?: () => void | Promise<void>;
+    href?: string;
+  }
+): ResourceAction<T> | null => {
+  if (!condition) return null;
+
+  return {
+    label,
+    icon,
+    colorClass,
+    hoverBgClass,
+    hoverRingClass: hoverRingClass ?? "hover:ring-blue-500/30",
+    rippleClass: rippleClass ?? "bg-blue-500/20",
+    ...(href ? { href } : {}),
+    ...(onClick ? { onClick } : {}),
+  };
+};

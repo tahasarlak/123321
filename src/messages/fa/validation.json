@@ -1,0 +1,12 @@
+{
+  "title_required": "عنوان دوره الزامی است",
+  "instructor_required": "مدرس الزامی است",
+  "type_required": "نوع دوره الزامی است",
+  "unauthorized": "دسترسی ممنوع",
+  "course_not_found": "دوره یافت نشد",
+  "not_owner": "فقط صاحب دوره یا ادمین می‌تواند ویرایش کند",
+  "server_error": "خطای سرور",
+  "price_invalid": "قیمت باید عدد معتبر باشد",
+  "capacity_invalid": "ظرفیت باید عدد صحیح مثبت باشد",
+  "discount_invalid": "درصد تخفیف باید بین ۰ تا ۱۰۰ باشد"
+}

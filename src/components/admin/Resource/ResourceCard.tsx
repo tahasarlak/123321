@@ -3,33 +3,42 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils/cn";
-import { RESOURCE_DISPLAY_CONFIG } from "@/config/resources";
-import ResourceActions, { ResourceAction } from "./ResourceActions";
+import { RESOURCES_BY_ROLE } from "@/config/resources";
+import ResourceActions from "./ResourceActions";
+import {
+  DetailItem,
+  ResourceAction,
+  TagItem,
+} from "@/types/resource-types";
 
 interface ResourceCardProps<T extends { id: string }> {
   item: T;
-  resource: keyof typeof RESOURCE_DISPLAY_CONFIG;
+  resourceKey:
+    | keyof typeof RESOURCES_BY_ROLE.admin
+    | keyof typeof RESOURCES_BY_ROLE.instructor
+    | keyof typeof RESOURCES_BY_ROLE.blogger;
   isSelected: boolean;
   onToggleSelect: () => void;
   disabled?: boolean;
   getActions: (item: T) => ResourceAction[];
 }
 
-// تایپ‌های دقیق برای خروجی‌های card (اختیاری اما توصیه می‌شود)
-type TagItem = { text: string; class: string };
-type DetailItem = { label: string; value: string };
-type StatusItem = { text: string; icon: any; color: string };
-
 export default function ResourceCard<T extends { id: string }>({
   item,
-  resource,
+  resourceKey,
   isSelected,
   onToggleSelect,
   disabled = false,
   getActions,
 }: ResourceCardProps<T>) {
   const commonT = useTranslations("common");
-  const config = RESOURCE_DISPLAY_CONFIG[resource];
+
+  // دسترسی ایمن بدون assertion خطرناک
+  const config = (
+    RESOURCES_BY_ROLE.admin[resourceKey as keyof typeof RESOURCES_BY_ROLE.admin] ??
+    RESOURCES_BY_ROLE.instructor[resourceKey as keyof typeof RESOURCES_BY_ROLE.instructor] ??
+    RESOURCES_BY_ROLE.blogger[resourceKey as keyof typeof RESOURCES_BY_ROLE.blogger]
+  ) as any; // اینجا any کاملاً ایمنه چون فقط برای خواندن card استفاده می‌شه
 
   if (!config?.card) {
     return (
@@ -39,33 +48,39 @@ export default function ResourceCard<T extends { id: string }>({
     );
   }
 
-  const { card } = config;
+  const card = config.card;
 
   const cardData = useMemo(() => {
     try {
-      const safeItem = item as any;
+      // استفاده از any برای فراخوانی توابع کارت — کاملاً استاندارد و ایمن
+      const safeItem: any = item;
 
-      // استخراج داده‌ها با fallback امن
       const title = card.title(safeItem) ?? commonT("untitled");
-      const subtitle = card.subtitle(safeItem) ?? "";
+      const subtitle = card.subtitle?.(safeItem) ?? "";
       const avatar = card.avatar(safeItem) ?? "–";
       const badge = card.badge?.(safeItem) ?? null;
 
-      // فیلتر کردن مقادیر معتبر (حذف "" یا null/undefined)
-      const tags: TagItem[] = (card.tags(safeItem) ?? []).filter(
-        (tag): tag is TagItem => !!tag && typeof tag === "object" && "text" in tag
+      const tags: TagItem[] = (card.tags?.(safeItem) ?? []).filter(
+        (tag: any): tag is TagItem =>
+          tag != null &&
+          typeof tag === "object" &&
+          typeof tag.text === "string" &&
+          typeof tag.class === "string"
       );
 
-      const details: DetailItem[] = (card.details(safeItem) ?? []).filter(
-        (detail): detail is DetailItem =>
-          !!detail && typeof detail === "object" && "label" in detail && "value" in detail
+      const details: DetailItem[] = (card.details?.(safeItem) ?? []).filter(
+        (detail: any): detail is DetailItem =>
+          detail != null &&
+          typeof detail === "object" &&
+          typeof detail.label === "string" &&
+          typeof detail.value === "string"
       );
 
-      const status = "status" in card ? card.status?.(safeItem) ?? null : null;
+      const status = card.status?.(safeItem) ?? null;
 
       return { title, subtitle, avatar, badge, tags, details, status };
     } catch (err) {
-      console.warn(`Card render error for resource ${resource}:`, err);
+      console.warn(`Card render error for resource ${resourceKey}:`, err);
       return {
         title: commonT("errorLoadingItem"),
         subtitle: "",
@@ -76,13 +91,12 @@ export default function ResourceCard<T extends { id: string }>({
         status: null,
       };
     }
-  }, [item, card, commonT, resource]);
+  }, [item, card, commonT, resourceKey]);
 
   const StatusIcon = cardData.status?.icon;
-
   const actions = useMemo(() => getActions(item), [getActions, item]);
 
-  const cardId = `resource-card-${resource}-${item.id}`;
+  const cardId = `resource-card-${resourceKey}-${item.id}`;
 
   return (
     <article
@@ -108,14 +122,9 @@ export default function ResourceCard<T extends { id: string }>({
             disabled && "opacity-50 cursor-not-allowed"
           )}
           aria-label={commonT("selectItem", { name: cardData.title })}
-          role="checkbox"
-          aria-checked={isSelected}
         />
-        <label
-          htmlFor={cardId}
-          className="absolute inset-0 cursor-pointer"
-          aria-hidden="true"
-        />
+        <label htmlFor={cardId} className="absolute inset-0 cursor-pointer" aria-hidden="true" />
+
         <div className="w-32 h-32 bg-background/85 rounded-full flex items-center justify-center text-6xl font-black text-primary/90 shadow-xl ring-1 ring-primary/20">
           {cardData.avatar}
         </div>
@@ -141,8 +150,7 @@ export default function ResourceCard<T extends { id: string }>({
                 {cardData.badge.text}
               </span>
             )}
-
-            {cardData.tags.map((tag) => (
+            {cardData.tags.map((tag: TagItem) => (
               <span
                 key={tag.text}
                 className={cn("px-4 py-1.5 rounded-full text-base font-medium", tag.class)}
@@ -155,7 +163,7 @@ export default function ResourceCard<T extends { id: string }>({
 
         {cardData.details.length > 0 && (
           <dl className="grid grid-cols-[auto,1fr] gap-x-4 gap-y-2 text-base text-muted-foreground">
-            {cardData.details.map((detail) => (
+            {cardData.details.map((detail: DetailItem) => (
               <div key={detail.label} className="contents">
                 <dt className="font-medium">{detail.label}:</dt>
                 <dd className="font-bold text-foreground">{detail.value}</dd>

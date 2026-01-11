@@ -1,4 +1,6 @@
-// src/validations/adminShipping/index.ts
+// src/lib/validations/adminShipping/index.ts
+// کامل جایگزین کن با این کد (سازگار با Zod v3 — بدون هیچ خطای extend/required/partial)
+
 import { z } from "zod";
 import { faAdminShippingMessages } from "./messages";
 
@@ -24,6 +26,7 @@ export const createMethodSchema = z.object({
   estimatedDays: z.string().optional(),
   priority: z.number().int().default(0),
   isActive: z.boolean().default(true),
+  description: z.string().optional(),
   address: z.string().optional(),
   phone: z.string().optional(),
   icon: z.string().optional(),
@@ -31,13 +34,39 @@ export const createMethodSchema = z.object({
   zoneId: z.string().optional(),
   pickupId: z.string().optional(),
   honeypot: z.string().optional(),
-}).refine((data) => data.type !== "PRESENTIAL" || data.address, {
+}).refine((data) => data.type !== "PRESENTIAL" || !!data.address, {
   message: faAdminShippingMessages.address_required,
   path: ["address"],
 });
 
-export const editMethodSchema = createMethodSchema.partial().extend({
+// برای edit: همه فیلدها optional هستند جز id که اجباری است
+// refine رو دوباره اضافه کردیم چون وقتی type ارسال نشود، شرط رو چک نکنیم
+export const editMethodSchema = z.object({
   id: z.string().min(1),
+  title: z.string().min(3, faAdminShippingMessages.name_min).optional(),
+  type: z.enum(methodTypes).optional(),
+  cost: z.number().optional(),
+  costPercent: z.number().optional(),
+  freeAbove: z.number().optional(),
+  estimatedDays: z.string().optional(),
+  priority: z.number().int().optional(),
+  isActive: z.boolean().optional(),
+  description: z.string().optional(),
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  icon: z.string().optional(),
+  locationDetails: z.object({}).passthrough().optional(),
+  zoneId: z.string().optional(),
+  pickupId: z.string().optional(),
+  honeypot: z.string().optional(),
+}).refine((data) => {
+  // اگر type ارسال نشده یا PRESENTIAL نباشد → ok
+  if (!data.type || data.type !== "PRESENTIAL") return true;
+  // اگر type === PRESENTIAL باشد، address باید وجود داشته باشد
+  return !!data.address;
+}, {
+  message: faAdminShippingMessages.address_required,
+  path: ["address"],
 });
 
 export const createPickupSchema = z.object({

@@ -2,16 +2,16 @@
 "use server";
 
 import { prisma } from "@/lib/db/prisma";
+import { Prisma } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 import {
-  createZoneSchema,
-  editZoneSchema,
   createMethodSchema,
   editMethodSchema,
-  createPickupSchema,
-  editPickupSchema,
 } from "@/lib/validations/adminShipping";
 import { faAdminShippingMessages } from "@/lib/validations/adminShipping/messages";
 import type { ShippingResult } from "@/types/adminShipping";
+
+const PAGE_SIZE = 12;
 
 async function hasAdminAccess(userId: string): Promise<boolean> {
   const user = await prisma.user.findUnique({
@@ -21,71 +21,163 @@ async function hasAdminAccess(userId: string): Promise<boolean> {
   return user?.roles.some((r) => ["ADMIN", "SUPERADMIN"].includes(r.role)) ?? false;
 }
 
-// ---------- ZONES ----------
-export async function handleCreateZone(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
+// دریافت لیست روش‌های ارسال + آمار
+export async function handleFetchShippingMethods({
+  search = "",
+  page = 1,
+}: {
+  search?: string;
+  page?: number;
+}): Promise<{
+  items: any[];
+  totalItems: number;
+  stats: { key: string; count: number }[];
+}> {
+  const where: Prisma.ShippingMethodWhereInput = {};
 
-  const parsed = createZoneSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
-
-  const { name, countryIds, isActive, honeypot } = parsed.data;
-  if (honeypot && honeypot.length > 0) return { success: true };
-
-  const zone = await prisma.shippingZone.create({
-    data: {
-      name,
-      isActive,
-      countries: { connect: countryIds.map((id) => ({ id })) },
-    },
-  });
-
-  return { success: true, message: "زون ارسال ایجاد شد", item: zone };
-}
-
-export async function handleEditZone(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  const parsed = editZoneSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
-
-  const { id, name, countryIds, isActive } = parsed.data;
-
-  const updateData: any = {};
-  if (name) updateData.name = name;
-  if (isActive !== undefined) updateData.isActive = isActive;
-  if (countryIds) updateData.countries = { set: [], connect: countryIds.map((id) => ({ id })) };
-
-  const zone = await prisma.shippingZone.update({
-    where: { id },
-    data: updateData,
-  });
-
-  return { success: true, message: "زون ارسال ویرایش شد", item: zone };
-}
-
-export async function handleDeleteZone(zoneId: string, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  const usage = await prisma.shippingZone.findUnique({
-    where: { id: zoneId },
-    select: { methods: { take: 1 } },
-  });
-
-  if (usage?.methods.length) {
-    return { success: false, error: faAdminShippingMessages.in_use };
+  if (search.trim()) {
+    const trimmedSearch = search.trim();
+    where.OR = [
+      { title: { contains: trimmedSearch, mode: "insensitive" } },
+      { description: { contains: trimmedSearch, mode: "insensitive" } },
+    ];
   }
 
-  await prisma.shippingZone.delete({ where: { id: zoneId } });
+  const [methodsRaw, totalMethods] = await Promise.all([
+    prisma.shippingMethod.findMany({
+      where,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      orderBy: { priority: "desc" },
+      include: {
+        zone: { select: { name: true } },
+        pickup: { select: { title: true } },
+      },
+    }),
+    prisma.shippingMethod.count({ where }),
+  ]);
 
-  return { success: true, message: "زون ارسال حذف شد" };
+  const active = methodsRaw.filter((m) => m.isActive).length;
+  const inactive = totalMethods - active;
+
+  const stats = [
+    { key: "active", count: active },
+    { key: "inactive", count: inactive },
+    { key: "total", count: totalMethods },
+  ];
+
+  return { items: methodsRaw, totalItems: totalMethods, stats };
 }
 
-// ---------- METHODS ----------
-export async function handleCreateMethod(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
+// تغییر وضعیت فعال/غیرفعال
+export async function handleToggleMethod(id: string, current: boolean): Promise<{ success: boolean; error?: string }> {
+  try {
+    await prisma.shippingMethod.update({
+      where: { id },
+      data: { isActive: !current },
+    });
+    revalidatePath("/dashboard/admin/shipping-methods");
+    return { success: true };
+  } catch (error) {
+    console.error("Error toggling shipping method:", error);
+    return { success: false, error: "خطا در تغییر وضعیت روش ارسال" };
+  }
+}
+
+// حذف روش ارسال
+export async function handleDeleteMethod(methodId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const usage = await prisma.shippingMethod.findUnique({
+      where: { id: methodId },
+      select: { _count: { select: { products: true } } },
+    });
+
+    if ((usage?._count.products ?? 0) > 0) {
+      return { success: false, error: faAdminShippingMessages.in_use };
+    }
+
+    await prisma.shippingMethod.delete({ where: { id: methodId } });
+    revalidatePath("/dashboard/admin/shipping-methods");
+    return { success: true };
+  } catch (error) {
+    console.error("Error deleting shipping method:", error);
+    return { success: false, error: "خطا در حذف روش ارسال" };
+  }
+}
+
+// خروجی CSV
+export async function handleExportShippingMethodsCsv(
+  where: Prisma.ShippingMethodWhereInput = {}
+): Promise<string> {
+  try {
+    const methods = await prisma.shippingMethod.findMany({
+      where,
+      orderBy: { priority: "desc" },
+      include: {
+        zone: { select: { name: true } },
+        pickup: { select: { title: true } },
+      },
+    });
+
+    const headers = [
+      "عنوان",
+      "نوع",
+      "توضیحات",
+      "هزینه (تومان)",
+      "درصد هزینه",
+      "رایگان بالای",
+      "روز تخمینی",
+      "وضعیت",
+      "اولویت",
+      "زون",
+      "مکان تحویل",
+      "تاریخ ایجاد",
+    ];
+
+    const rows = methods.map((m) => [
+      m.title,
+      m.type,
+      m.description ?? "-",
+      m.cost?.toLocaleString("fa-IR") ?? "0",
+      m.costPercent ? `${m.costPercent}%` : "-",
+      m.freeAbove ? m.freeAbove.toLocaleString("fa-IR") : "-",
+      m.estimatedDays ? `${m.estimatedDays} روز` : "-",
+      m.isActive ? "فعال" : "غیرفعال",
+      m.priority.toString(),
+      m.zone?.name ?? "-",
+      m.pickup?.title ?? "-",
+      new Date(m.createdAt).toLocaleDateString("fa-IR"),
+    ]);
+
+    const csvLines = [
+      headers.join(","),
+      ...rows.map((row) =>
+        row
+          .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+          .join(",")
+      ),
+    ].join("\n");
+
+    return `\uFEFF${csvLines}`;
+  } catch (error) {
+    console.error("خطا در خروجی CSV روش‌های ارسال:", error);
+    throw new Error("خطایی در تولید فایل CSV رخ داد.");
+  }
+}
+
+// ایجاد روش ارسال
+export async function handleCreateMethod(
+  data: unknown,
+  adminUserId: string
+): Promise<ShippingResult> {
+  if (!(await hasAdminAccess(adminUserId))) {
+    return { success: false, error: faAdminShippingMessages.unauthorized };
+  }
 
   const parsed = createMethodSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
+  if (!parsed.success) {
+    return { success: false, error: faAdminShippingMessages.server_error };
+  }
 
   const {
     title,
@@ -96,6 +188,7 @@ export async function handleCreateMethod(data: unknown, adminUserId: string): Pr
     estimatedDays,
     priority,
     isActive,
+    description,
     address,
     phone,
     icon,
@@ -110,12 +203,13 @@ export async function handleCreateMethod(data: unknown, adminUserId: string): Pr
   const methodData: any = {
     title,
     type,
-    cost,
-    costPercent,
-    freeAbove,
-    estimatedDays,
+    cost: cost ?? 0,
+    costPercent: costPercent ?? null,
+    freeAbove: freeAbove ?? null,
+    estimatedDays: estimatedDays ?? null,
     priority,
     isActive,
+    description: description ?? null,
     zone: zoneId ? { connect: { id: zoneId } } : undefined,
     pickup: pickupId ? { connect: { id: pickupId } } : undefined,
   };
@@ -131,18 +225,41 @@ export async function handleCreateMethod(data: unknown, adminUserId: string): Pr
     data: methodData,
   });
 
-  return { success: true, message: "روش ارسال ایجاد شد", item: method };
+  revalidatePath("/dashboard/admin/shipping-methods");
+  return { success: true, message: "روش ارسال با موفقیت ایجاد شد", item: method };
 }
 
-export async function handleEditMethod(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
+// ویرایش روش ارسال
+export async function handleEditMethod(
+  data: unknown,
+  adminUserId: string
+): Promise<ShippingResult> {
+  if (!(await hasAdminAccess(adminUserId))) {
+    return { success: false, error: faAdminShippingMessages.unauthorized };
+  }
 
   const parsed = editMethodSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
+  if (!parsed.success) {
+    return { success: false, error: faAdminShippingMessages.server_error };
+  }
 
-  const { id, type, address, phone, icon, locationDetails, ...updateData } = parsed.data;
+  const {
+    id,
+    type,
+    address,
+    phone,
+    icon,
+    locationDetails,
+    zoneId,
+    pickupId,
+    ...updateData
+  } = parsed.data;
 
-  const methodData: any = updateData;
+  const methodData: any = {
+    ...updateData,
+    zone: zoneId ? { connect: { id: zoneId } } : { disconnect: true },
+    pickup: pickupId ? { connect: { id: pickupId } } : { disconnect: true },
+  };
 
   if (type === "PRESENTIAL") {
     methodData.address = address;
@@ -161,70 +278,6 @@ export async function handleEditMethod(data: unknown, adminUserId: string): Prom
     data: methodData,
   });
 
-  return { success: true, message: "روش ارسال ویرایش شد", item: method };
-}
-
-export async function handleDeleteMethod(methodId: string, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  const usage = await prisma.shippingMethod.findUnique({
-    where: { id: methodId },
-    select: { _count: { select: { products: true } } },
-  });
-
-  if ((usage?._count.products ?? 0) > 0) {
-    return { success: false, error: faAdminShippingMessages.in_use };
-  }
-
-  await prisma.shippingMethod.delete({ where: { id: methodId } });
-
-  return { success: true, message: "روش ارسال حذف شد" };
-}
-
-// ---------- PICKUPS ----------
-export async function handleCreatePickup(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  const parsed = createPickupSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
-
-  const { title, address, phone, cityId, icon, isActive, honeypot } = parsed.data;
-  if (honeypot && honeypot.length > 0) return { success: true };
-
-  const pickup = await prisma.pickupLocation.create({
-    data: {
-      title,
-      address,
-      phone,
-      cityId,
-      icon,
-      isActive,
-    },
-  });
-
-  return { success: true, message: "مکان تحویل ایجاد شد", item: pickup };
-}
-
-export async function handleEditPickup(data: unknown, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  const parsed = editPickupSchema.safeParse(data);
-  if (!parsed.success) return { success: false, error: faAdminShippingMessages.server_error };
-
-  const { id, ...updateData } = parsed.data;
-
-  const pickup = await prisma.pickupLocation.update({
-    where: { id },
-    data: updateData as any,
-  });
-
-  return { success: true, message: "مکان تحویل ویرایش شد", item: pickup };
-}
-
-export async function handleDeletePickup(pickupId: string, adminUserId: string): Promise<ShippingResult> {
-  if (!(await hasAdminAccess(adminUserId))) return { success: false, error: faAdminShippingMessages.unauthorized };
-
-  await prisma.pickupLocation.delete({ where: { id: pickupId } });
-
-  return { success: true, message: "مکان تحویل حذف شد" };
+  revalidatePath("/dashboard/admin/shipping-methods");
+  return { success: true, message: "روش ارسال با موفقیت ویرایش شد", item: method };
 }

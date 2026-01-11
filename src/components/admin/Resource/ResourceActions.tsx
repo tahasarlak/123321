@@ -7,19 +7,8 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import Link from "next/link";
 import { ComponentType, memo, useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import { ResourceAction } from "@/types/resource-types";
 
-export type ResourceAction<T = any> = {
-  label: string;
-  /** متن نمایش داده شده کنار آیکن (اگر size !== "icon") */
-  text?: string;
-  icon: ComponentType<{ className?: string }>;
-  href?: string;
-  onClick?: () => Promise<void> | void;
-  variant?: "default" | "secondary" | "destructive" | "outline" | "ghost" | "link";
-  size?: "default" | "sm" | "lg" | "icon";
-  destructive?: boolean;
-  disabled?: boolean;
-};
 
 interface ResourceActionsProps {
   actions: ResourceAction[];

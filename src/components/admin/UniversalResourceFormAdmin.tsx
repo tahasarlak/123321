@@ -1,21 +1,10 @@
-// src/components/admin/UniversalResourceFormAdmin.tsx
 "use client";
-
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import {
-  Loader2,
-  Save,
-  ArrowLeft,
-  CalendarIcon,
-  ChevronDown,
-} from "lucide-react";
+import { Loader2, Save, ArrowLeft, CalendarIcon, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
-
 import ImageUploader from "@/components/upload/ImageUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,80 +26,41 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils/cn";
 import { format } from "date-fns-jalali";
-
-import { FormField } from "@/types/resource-types"; // فرض بر این است که نوع FormField اینجا import شده
-
-type FieldType =
-  | "text"
-  | "email"
-  | "password"
-  | "number"
-  | "textarea"
-  | "select"
-  | "multi-select"
-  | "checkbox"
-  | "date"
-  | "image"
-  | "gallery";
+import { RESOURCES_BY_ROLE, type Role } from "@/config/resources";
+import type { FormField, ResourceConfigWithForm } from "@/types/resource-types";
+import { hasFormConfig } from "@/types/resource-types";
 
 interface Props {
+  role: Role;
   resource: string;
   initialData?: Record<string, any>;
   preloadData?: Record<string, any>;
-  fields: FormField[];
 }
 
 export default function UniversalResourceFormAdmin({
+  role,
   resource,
   initialData,
   preloadData = {},
-  fields,
 }: Props) {
-  const t = useTranslations(`admin.${resource}`);
+  const resources = RESOURCES_BY_ROLE[role];
+  const rawConfig = resources[resource as keyof typeof resources];
+
+if (!hasFormConfig(rawConfig)) {
+  throw new Error(`فرم برای منبع ${resource} در نقش ${role} تعریف نشده است.`);
+}
+
+ const config = rawConfig as ResourceConfigWithForm<any>; // 
+const fields = config.form.fields;
+
   const commonT = useTranslations("common");
   const router = useRouter();
-
   const isEdit = !!initialData?.id;
-
   const [isPending, startTransition] = useTransition();
-  const [imageUrl, setImageUrl] = useState<string | null>(
-    initialData?.image || null
-  );
+  const [imageUrl, setImageUrl] = useState<string | null>(initialData?.image || null);
   const [galleryUrls, setGalleryUrls] = useState<string[]>(
     Array.isArray(initialData?.gallery) ? initialData.gallery : []
   );
-
-  // ساخت اسکیما با zod
-  const formSchema = z.object(
-    fields.reduce((acc: Record<string, z.ZodTypeAny>, field) => {
-      const isRequired = field.required === true;
-
-      let fieldSchema: z.ZodTypeAny;
-
-      if (isRequired) {
-        if (field.type === "number") {
-          fieldSchema = z.coerce.number().positive({
-            message: `${field.label} باید عدد مثبت باشد`,
-          });
-        } else if (field.type === "date") {
-          fieldSchema = z.string().min(1, {
-            message: `${field.label} الزامی است`,
-          });
-        } else {
-          fieldSchema = z.string().min(1, {
-            message: `${field.label} الزامی است`,
-          });
-        }
-      } else {
-        fieldSchema = z.any().optional();
-      }
-
-      acc[field.name] = fieldSchema;
-      return acc;
-    }, {} as Record<string, z.ZodTypeAny>)
-  );
-
-  type FormData = z.infer<typeof formSchema>;
 
   const {
     register,
@@ -118,39 +68,90 @@ export default function UniversalResourceFormAdmin({
     formState: { errors },
     setValue,
     watch,
-  } = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: initialData || {},
+  } = useForm({
+    defaultValues: {
+      ...initialData,
+      ...fields
+        .filter((f): f is FormField & { type: "multi-select" } => f.type === "multi-select")
+        .reduce((acc, field) => {
+          acc[field.name] = Array.isArray(initialData?.[field.name])
+            ? initialData[field.name]
+            : [];
+          return acc;
+        }, {} as Record<string, any>),
+    },
   });
 
   const onSubmit = handleSubmit((data) => {
     startTransition(async () => {
-      const submitData = {
-        ...data,
-        image: imageUrl || undefined,
-        gallery: galleryUrls.length > 0 ? galleryUrls : undefined,
-      };
+      try {
+        const formData = new FormData();
 
-      // TODO: اینجا server action واقعی خودتون رو فراخوانی کنید
-      console.log("فرم ارسال شد:", { resource, isEdit, data: submitData });
+        Object.entries(data).forEach(([key, value]) => {
+          if (value === undefined || value === null || value === "") return;
+          if (Array.isArray(value)) {
+            value.forEach((item) => formData.append(key, String(item)));
+          } else {
+            formData.append(key, String(value));
+          }
+        });
 
-      toast.success(
-        isEdit ? "تغییرات با موفقیت ذخیره شد!" : "ایجاد با موفقیت انجام شد!"
-      );
+        // checkboxهای تیک نخورده
+        fields
+          .filter((f) => f.type === "checkbox")
+          .forEach((field) => {
+            if (!(field.name in data)) {
+              formData.append(field.name, "false");
+            }
+          });
 
-      router.push(`/dashboard/admin/${resource}`);
-      router.refresh();
+        // تصویر
+        if (imageUrl && imageUrl !== initialData?.image) {
+          formData.append("image", imageUrl);
+        }
+
+        // گالری
+        galleryUrls.forEach((url) => {
+          if (!initialData?.gallery?.includes(url)) {
+            formData.append("gallery", url);
+          }
+        });
+
+        let result;
+        if (isEdit && initialData?.id) {
+          if (!config.form.updateAction) {
+            toast.error("عملیات ویرایش تعریف نشده است.");
+            return;
+          }
+          result = await config.form.updateAction(formData, initialData.id);
+        } else {
+          if (!config.form.createAction) {
+            toast.error("عملیات ایجاد تعریف نشده است.");
+            return;
+          }
+          result = await config.form.createAction(formData);
+        }
+
+        if (result?.success) {
+          toast.success(result.message || (isEdit ? "تغییرات ذخیره شد" : "ایجاد موفق"));
+          router.push(`/dashboard/${role}/${resource}`);
+          router.refresh();
+        } else {
+          toast.error(result?.message || "خطایی رخ داد");
+        }
+      } catch (error: any) {
+        console.error("خطا در ارسال فرم:", error);
+        toast.error(error?.message || "خطای ناشناخته");
+      }
     });
   });
 
   const getOptions = (field: FormField): Array<{ value: string | number; label: string }> => {
     if (!field.options) return [];
-
     if (typeof field.options === "string" && field.options.startsWith("preload.")) {
       const key = field.options.split(".")[1];
       return preloadData[key] || [];
     }
-
     return Array.isArray(field.options) ? field.options : [];
   };
 
@@ -158,7 +159,7 @@ export default function UniversalResourceFormAdmin({
     if (field.createOnly && isEdit) return null;
     if (field.editOnly && !isEdit) return null;
 
-    const error = errors[field.name as keyof FormData];
+    const error = errors[field.name];
 
     switch (field.type) {
       case "text":
@@ -174,10 +175,13 @@ export default function UniversalResourceFormAdmin({
               id={field.name}
               type={field.type}
               placeholder={field.placeholder}
-              {...register(field.name, { valueAsNumber: field.type === "number" })}
+              {...register(field.name, {
+                required: field.required ? `${field.label} الزامی است` : false,
+                valueAsNumber: field.type === "number",
+              })}
               className="text-xl py-6"
             />
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
+            {error && <p className="text-sm text-destructive">{String(error.message)}</p>}
           </div>
         );
 
@@ -190,18 +194,24 @@ export default function UniversalResourceFormAdmin({
             <Textarea
               id={field.name}
               placeholder={field.placeholder}
-              rows={6}
-              {...register(field.name)}
+              rows={field.rows || 6}
+              {...register(field.name, {
+                required: field.required ? `${field.label} الزامی است` : false,
+              })}
               className="text-xl resize-none"
             />
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
+            {error && <p className="text-sm text-destructive">{String(error.message)}</p>}
           </div>
         );
 
       case "checkbox":
         return (
           <div className="flex items-center space-x-3 space-y-0">
-            <Checkbox id={field.name} {...register(field.name)} />
+            <Checkbox
+              id={field.name}
+              {...register(field.name)}
+              defaultChecked={!!initialData?.[field.name]}
+            />
             <Label htmlFor={field.name} className="font-medium text-lg cursor-pointer">
               {field.label}
             </Label>
@@ -217,14 +227,9 @@ export default function UniversalResourceFormAdmin({
             <ImageUploader onUpload={setImageUrl} />
             {imageUrl && (
               <div className="mt-4">
-                <img
-                  src={imageUrl}
-                  alt="preview"
-                  className="max-h-96 rounded-2xl shadow-2xl mx-auto object-contain"
-                />
+                <img src={imageUrl} alt="preview" className="max-h-96 rounded-2xl shadow-2xl mx-auto object-contain" />
               </div>
             )}
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
           </div>
         );
 
@@ -237,11 +242,7 @@ export default function UniversalResourceFormAdmin({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
                 {galleryUrls.map((url, i) => (
                   <div key={i} className="relative group">
-                    <img
-                      src={url}
-                      alt={`gallery ${i}`}
-                      className="rounded-2xl shadow-xl object-cover h-48 w-full"
-                    />
+                    <img src={url} alt={`gallery ${i}`} className="rounded-2xl shadow-xl object-cover h-48 w-full" />
                     <button
                       type="button"
                       onClick={() => setGalleryUrls((prev) => prev.filter((_, index) => index !== i))}
@@ -267,13 +268,10 @@ export default function UniversalResourceFormAdmin({
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal text-xl py-6",
-                    !dateValue && "text-muted-foreground"
-                  )}
+                  className={cn("w-full justify-start text-left font-normal text-xl py-6", !dateValue && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-2 h-5 w-5" />
-                  {dateValue ? format(new Date(dateValue), "PPP") : <span>انتخاب تاریخ</span>}
+                  {dateValue ? format(new Date(dateValue), "PPP") : <span>{field.placeholder || "انتخاب تاریخ"}</span>}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -285,54 +283,40 @@ export default function UniversalResourceFormAdmin({
                 />
               </PopoverContent>
             </Popover>
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
           </div>
         );
 
-      case "select": {
+      case "select":
         const selectValue = watch(field.name);
-        let selectOptions = getOptions(field);
-
-        // فیلتر گزینه‌های معتبر
-        selectOptions = selectOptions.filter(
-          (opt) => opt && opt.value != null && String(opt.value).trim() !== ""
-        );
-
+        const selectOptions = getOptions(field);
         return (
           <div className="space-y-2">
             <Label>
               {field.label} {field.required && <span className="text-red-500">*</span>}
             </Label>
-            <Select
-              onValueChange={(value) => setValue(field.name, value)}
-              defaultValue={selectValue?.toString() ?? undefined}
-            >
+            <Select onValueChange={(value) => setValue(field.name, value, { shouldValidate: true })} value={selectValue?.toString()}>
               <SelectTrigger className="text-xl py-6">
-                <SelectValue placeholder="انتخاب کنید" />
+                <SelectValue placeholder={field.placeholder || "انتخاب کنید"} />
               </SelectTrigger>
               <SelectContent>
                 {selectOptions.length === 0 ? (
-                  <div className="py-6 text-center text-muted-foreground text-sm">
-                    گزینه‌ای موجود نیست
-                  </div>
+                  <div className="py-6 text-center text-muted-foreground text-sm">گزینه‌ای موجود نیست</div>
                 ) : (
                   selectOptions.map((opt) => (
                     <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                      {opt.label || "گزینه بدون عنوان"}
+                      {opt.label}
                     </SelectItem>
                   ))
                 )}
               </SelectContent>
             </Select>
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
+            {error && <p className="text-sm text-destructive">{String(error.message)}</p>}
           </div>
         );
-      }
 
-      case "multi-select": {
-        const multiValue = watch(field.name) || [];
+      case "multi-select":
+        const multiValue: string[] = watch(field.name) || [];
         const multiOptions = getOptions(field);
-
         return (
           <div className="space-y-2">
             <Label>
@@ -340,14 +324,9 @@ export default function UniversalResourceFormAdmin({
             </Label>
             <Popover>
               <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className="w-full justify-between text-xl py-6"
-                >
+                <Button variant="outline" className="w-full justify-between text-xl py-6">
                   <span>
-                    {multiValue.length > 0
-                      ? `${multiValue.length} مورد انتخاب شده`
-                      : "هیچ موردی انتخاب نشده"}
+                    {multiValue.length > 0 ? `${multiValue.length} مورد انتخاب شده` : field.placeholder || "هیچ موردی انتخاب نشده"}
                   </span>
                   <ChevronDown className="h-5 w-5 opacity-50" />
                 </Button>
@@ -355,20 +334,15 @@ export default function UniversalResourceFormAdmin({
               <PopoverContent className="w-full p-0">
                 <div className="max-h-96 overflow-y-auto">
                   {multiOptions.map((opt) => (
-                    <label
-                      key={String(opt.value)}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-accent cursor-pointer"
-                    >
+                    <label key={String(opt.value)} className="flex items-center gap-3 px-4 py-3 hover:bg-accent cursor-pointer">
                       <Checkbox
                         checked={multiValue.includes(String(opt.value))}
                         onCheckedChange={(checked) => {
+                          const val = String(opt.value);
                           if (checked) {
-                            setValue(field.name, [...multiValue, String(opt.value)]);
+                            setValue(field.name, [...multiValue, val], { shouldValidate: true });
                           } else {
-                            setValue(
-                              field.name,
-                              multiValue.filter((v: string) => v !== String(opt.value))
-                            );
+                            setValue(field.name, multiValue.filter((v) => v !== val), { shouldValidate: true });
                           }
                         }}
                       />
@@ -378,10 +352,8 @@ export default function UniversalResourceFormAdmin({
                 </div>
               </PopoverContent>
             </Popover>
-            {error && <p className="text-sm text-destructive">{error.message as string}</p>}
           </div>
         );
-      }
 
       default:
         return null;
@@ -401,19 +373,13 @@ export default function UniversalResourceFormAdmin({
           type="button"
           variant="outline"
           size="lg"
-          onClick={() => router.push(`/dashboard/admin/${resource}`)}
+          onClick={() => router.push(`/dashboard/${role}/${resource}`)}
           disabled={isPending}
         >
           <ArrowLeft className="ml-2 h-5 w-5" />
           {commonT("cancel")}
         </Button>
-
-        <Button
-          type="submit"
-          size="lg"
-          disabled={isPending}
-          className="px-12 text-xl"
-        >
+        <Button type="submit" size="lg" disabled={isPending} className="px-12 text-xl">
           {isPending ? (
             <>
               <Loader2 className="ml-2 h-5 w-5 animate-spin" />

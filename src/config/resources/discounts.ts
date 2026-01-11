@@ -1,12 +1,11 @@
 // src/config/resources/discounts.ts
 import { Percent, Tag, CheckCircle, XCircle, Trash2 } from "lucide-react";
-import React from "react";
 import {
   createEditAction,
   createDeleteAction,
   COMMON_CLASSES,
 } from "./shared";
-import { fetchDiscounts } from "@/actions/admin/discounts";
+import { fetchDiscounts } from "@/actions/productsCourses/discounts";
 
 interface Discount {
   id: string;
@@ -27,14 +26,11 @@ export const discountsConfig = {
   icon: Percent,
   color: "text-purple-600",
   createHref: "/dashboard/admin/discounts/create",
-
   stats: {
     active: { label: "فعال", icon: CheckCircle, color: "text-green-600" },
     inactive: { label: "غیرفعال", icon: XCircle, color: "text-orange-600" },
   },
-
   filters: [] as const,
-
   card: {
     title: (discount: Discount) => discount.code,
     subtitle: (discount: Discount) => discount.title || "بدون عنوان",
@@ -62,7 +58,6 @@ export const discountsConfig = {
       color: discount.isActive ? "text-green-600" : "text-orange-600",
     }),
   },
-
   actions: (discount: Discount, helpers?: any) => [
     createEditAction("discounts", discount, helpers),
     {
@@ -73,31 +68,27 @@ export const discountsConfig = {
     },
     createDeleteAction(discount, helpers),
   ],
-
   bulkActions: [
     {
       label: "فعال کردن دسته‌جمعی",
       action: "activate",
-      icon: React.createElement(CheckCircle, { className: "w-6 h-6" }),
+      icon: CheckCircle, // ← اصلاح شد
       color: "bg-green-600 text-white hover:bg-green-700",
     },
     {
       label: "غیرفعال کردن دسته‌جمعی",
       action: "deactivate",
-      icon: React.createElement(XCircle, { className: "w-6 h-6" }),
+      icon: XCircle, // ← اصلاح شد
       color: "bg-orange-600 text-white hover:bg-orange-700",
     },
     {
       label: "حذف دسته‌جمعی",
       action: "delete",
-      icon: React.createElement(Trash2, { className: "w-6 h-6" }),
+      icon: Trash2, // ← اصلاح شد
       color: "bg-destructive text-white hover:bg-destructive/90",
     },
   ],
-
   fetchAction: fetchDiscounts,
-
-  // === فرم عمومی بدون prisma و بدون ایمپورت کامپوننت ===
   form: {
     fields: [
       { type: "text", name: "code", label: "کد تخفیف", required: true, placeholder: "BLACKFRIDAY2025" },
@@ -112,8 +103,5 @@ export const discountsConfig = {
       { type: "date", name: "endsAt", label: "تاریخ پایان اعتبار" },
       { type: "checkbox", name: "isActive", label: "کد فعال", defaultChecked: true },
     ],
-    // preload نیاز نداره — همه فیلدها دستی هستن
-    // fetchOne در صفحه edit انجام می‌شه
-    // schema و onSubmitAction در صفحات عمومی تعریف می‌شه
   },
 } as const;

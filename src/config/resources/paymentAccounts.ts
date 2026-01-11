@@ -1,13 +1,11 @@
 // src/config/resources/paymentAccounts.ts
-
 import { CreditCard, Wallet, Globe, CheckCircle, XCircle, Trash2 } from "lucide-react";
-import React from "react";
 import {
   createEditAction,
   createDeleteAction,
   COMMON_CLASSES,
 } from "./shared";
-import { fetchPaymentAccounts } from "@/actions/admin/paymentAccounts";
+import { fetchPaymentAccounts } from "@/actions/productsCourses/paymentAccounts";
 
 interface PaymentAccount {
   id: string;
@@ -69,19 +67,19 @@ export const paymentAccountsConfig = {
     {
       label: "فعال کردن دسته‌جمعی",
       action: "activate",
-      icon: React.createElement(CheckCircle, { className: "w-6 h-6" }),
+      icon: CheckCircle, // ← اصلاح شد
       color: "bg-green-600 text-white hover:bg-green-700",
     },
     {
       label: "غیرفعال کردن دسته‌جمعی",
       action: "deactivate",
-      icon: React.createElement(XCircle, { className: "w-6 h-6" }),
+      icon: XCircle, // ← اصلاح شد
       color: "bg-orange-600 text-white hover:bg-orange-700",
     },
     {
       label: "حذف دسته‌جمعی",
       action: "delete",
-      icon: React.createElement(Trash2, { className: "w-6 h-6" }),
+      icon: Trash2, // ← اصلاح شد
       color: "bg-destructive text-white hover:bg-destructive/90",
     },
   ],

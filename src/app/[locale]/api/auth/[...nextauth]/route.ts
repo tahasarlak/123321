@@ -1,5 +1,4 @@
 // src/app/api/auth/[...nextauth]/route.ts
-
 import NextAuth, { NextAuthOptions, type DefaultSession } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
@@ -8,7 +7,6 @@ import { prisma } from "@/lib/db/prisma";
 import bcrypt from "bcryptjs";
 import { loginSchema } from "@/lib/validations/auth";
 import type { AuthUser } from "@/types/auth";
-
 import { redis } from "@/lib/redis/redis";
 import { emailRateLimit } from "@/lib/redis/rate-limit";
 
@@ -47,12 +45,12 @@ export const authOptions: NextAuthOptions = {
         // همیشه delay اول کار — جلوگیری از timing attack
         await fakeDelay();
 
-        // Honeypot
+        // Honeypot ضد ربات
         if (credentials?.honeypot && credentials.honeypot.length > 0) {
           return null;
         }
 
-        // Validation با Zod
+        // اعتبارسنجی با Zod
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) {
           return null;
@@ -68,8 +66,9 @@ export const authOptions: NextAuthOptions = {
         }
 
         const cacheKey = getUserLoginCacheKey(email);
-        const cached = await redis.get(cacheKey);
 
+        // کش برای چک وجود کاربر (جلوگیری از enumeration attack)
+        const cached = await redis.get(cacheKey);
         let userExists = false;
 
         if (cached !== null) {
@@ -81,20 +80,28 @@ export const authOptions: NextAuthOptions = {
               id: true,
               isBanned: true,
               password: true,
+              emailVerified: true,
+              isActive: true,
             },
           });
 
-          userExists = !!check && !check.isBanned && !!check.password;
-          await redis.set(cacheKey, userExists ? "1" : "0", { ex: 600 });
+          userExists =
+            !!check &&
+            !check.isBanned &&
+            !!check.password &&
+            !!check.emailVerified &&
+            check.isActive === true;
+
+          await redis.set(cacheKey, userExists ? "1" : "0", { ex: 600 }); // 10 دقیقه کش
         }
 
         if (!userExists) {
-          // مقایسه با hash فیک — جلوگیری از timing attack
+          // مقایسه با hash فیک برای جلوگیری از timing attack
           await bcrypt.compare(password, "$2a$12$thisisafakehashthatwillnevermatch12345");
           return null;
         }
 
-        // گرفتن اطلاعات کامل کاربر
+        // دریافت اطلاعات کامل کاربر
         const user = await prisma.user.findUnique({
           where: { email },
           select: {
@@ -106,53 +113,62 @@ export const authOptions: NextAuthOptions = {
             gender: true,
             password: true,
             isBanned: true,
-            isEmailVerified: true,
+            emailVerified: true,
+            isActive: true,
             jwtVersion: true,
             roles: { select: { role: true } },
           },
         });
 
-        // چک‌های امنیتی: بن، پسورد، تأیید ایمیل
-        if (!user || user.isBanned || !user.password || !user.isEmailVerified) {
+        // چک‌های امنیتی نهایی
+        if (
+          !user ||
+          user.isBanned ||
+          !user.password ||
+          !user.emailVerified ||
+          !user.isActive
+        ) {
           return null;
         }
 
-        // مقایسه پسورد — فقط یک بار!
+        // مقایسه رمز عبور
         const passwordValid = await bcrypt.compare(password, user.password);
         if (!passwordValid) {
           return null;
         }
 
+        // به‌روزرسانی زمان آخرین ورود
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { lastLoginAt: new Date() },
+        });
+
         // به‌روزرسانی کش
         await redis.set(cacheKey, "1", { ex: 600 });
 
-        // حذف فیلدهای حساس قبل از برگرداندن
-        const { password: _, isBanned: __, ...safeUser } = user;
+        // حذف فیلدهای حساس
+        const { password: _, ...safeUser } = user;
 
         return {
           ...safeUser,
-          roles: user.roles.map(r => r.role) || ["USER"],
+          roles: user.roles.map((r) => r.role) || ["USER"],
           jwtVersion: user.jwtVersion ?? 0,
         };
       },
     }),
-
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      allowDangerousEmailAccountLinking: true,
+      allowDangerousEmailAccountLinking: false, // توصیه: امن‌تره که false باشه
     }),
   ],
-
   session: {
     strategy: "jwt",
   },
-
   pages: {
     signIn: "/auth",
     error: "/auth/error",
   },
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -163,7 +179,6 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-
     async session({ session, token }) {
       session.user.id = token.id as string;
       session.user.roles = token.roles as string[];
@@ -173,15 +188,15 @@ export const authOptions: NextAuthOptions = {
       (session.user as any).jwtVersion = token.jwtVersion;
       return session;
     },
-
     async signIn({ user, account }) {
+      // اگر با گوگل وارد شد و نقش نداشت، نقش USER بده
       if (account?.provider === "google" && user.email) {
         const dbUser = await prisma.user.findUnique({
           where: { email: user.email },
           include: { roles: true },
         });
 
-        if (dbUser && !dbUser.roles.some(r => r.role === "USER")) {
+        if (dbUser && !dbUser.roles.some((r) => r.role === "USER")) {
           await prisma.userRole.create({
             data: { userId: dbUser.id, role: "USER" },
           });
@@ -190,7 +205,6 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
   },
-
   secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
 };

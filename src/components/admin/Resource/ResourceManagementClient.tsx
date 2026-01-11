@@ -1,21 +1,36 @@
-// src/components/admin/Resource/ResourceManagementClient.tsx
 "use client";
+
+import dynamic from "next/dynamic";
+import { NextIntlClientProvider } from "next-intl";
+import type { Messages } from "next-intl";
 
 import {
   exportResourceCsv,
   bulkResourceAction,
-} from "@/actions/admin/resourceActions";
+} from "@/actions/resourceActions";
 
-import ResourceManagementPage from "@/components/common/ResourceManagementPage";
+const ResourceManagementPage = dynamic(
+  () => import("@/components/common/ResourceManagementPage"),
+  { ssr: false }
+);
+
+import { RESOURCES_BY_ROLE } from "@/config/resources";
+
+type AllResourceKeys =
+  | keyof typeof RESOURCES_BY_ROLE.admin
+  | keyof typeof RESOURCES_BY_ROLE.instructor
+  | keyof typeof RESOURCES_BY_ROLE.blogger;
 
 type ResourceManagementClientProps<T extends { id: string }> = {
-  resource: keyof typeof import("@/config/resources").RESOURCE_DISPLAY_CONFIG;
+  resourceKey: AllResourceKeys;
   items: T[];
   totalItems: number;
   currentPage: number;
   totalPages: number;
   stats: { key: string; count: number }[];
   searchValue: string;
+  locale: string;
+  messages: Messages;
   translations?: {
     pageTitle?: string;
     totalCount?: string;
@@ -25,38 +40,45 @@ type ResourceManagementClientProps<T extends { id: string }> = {
 };
 
 export default function ResourceManagementClient<T extends { id: string }>({
-  resource,
+  resourceKey,
   items,
   totalItems,
   currentPage,
   totalPages,
   stats,
   searchValue,
+  locale,
+  messages,
   translations = {},
 }: ResourceManagementClientProps<T>) {
-  const getItemId = (item: T) => item.id;
+  // ایمن و بدون خطای TS
+  const getItemId = (item: T): string => {
+    return (item as any).id;
+  };
 
   const handleBulkAction = async (ids: string[], action: string) => {
-    return await bulkResourceAction(resource, ids, action);
+    return await bulkResourceAction(resourceKey, ids, action);
   };
 
   const handleExport = async () => {
-    return await exportResourceCsv(resource, {});
+    return await exportResourceCsv(resourceKey, {});
   };
 
   return (
-    <ResourceManagementPage
-      resource={resource}
-      items={items}
-      totalItems={totalItems}
-      currentPage={currentPage}
-      totalPages={totalPages}
-      stats={stats}
-      searchValue={searchValue}
-      onExport={handleExport}
-      onBulkAction={handleBulkAction}
-      getItemId={getItemId}
-      translations={translations}
-    />
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <ResourceManagementPage
+        resourceKey={resourceKey}
+        items={items}
+        totalItems={totalItems}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        stats={stats}
+        searchValue={searchValue}
+        onExport={handleExport}
+        onBulkAction={handleBulkAction}
+        getItemId={getItemId}
+        translations={translations}
+      />
+    </NextIntlClientProvider>
   );
 }

@@ -5,7 +5,7 @@ import {
   createOrderDetailsAction,
   ORDER_STATUS_BADGE_MAP,
 } from "./shared";
-import { fetchOrders } from "@/actions/admin/orders";
+import { fetchOrders } from "@/actions/productsCourses/orders";
 
 interface Order {
   id: string;

@@ -1,30 +1,46 @@
+// src/types/resource-types.ts
 import type { LucideIcon } from "lucide-react";
-
+import { ComponentType } from "react";
+import type {
+  RESOURCES_BY_ROLE,
+} from "@/config/resources";
 export type StatConfig = {
   label: string;
   icon: LucideIcon;
   color: string;
 };
-
+export type FilterOptionWithCount = FilterOption & { count?: number };
+export type FilterStatsItem = { key: string; count: number };
+export interface FiltersState {
+  search: string;
+  filters: Record<string, string>;
+}
 export type BulkAction = {
   label: string;
   action: string;
   icon: React.ReactNode;
   color: string;
 };
+
+
 export type FilterOption = {
   value: string;
   label: string;
+  icon?: LucideIcon | ComponentType<any>; 
 };
 
 export type ResourceFilter = {
   type: "select";
   param: string;
-  label?: string; 
+  label?: string;
+  placeholder?: string;     // اضافه شد
+  defaultValue?: string;    // اضافه شد (برای مواردی مثل status که "all" دارن)
   options:
     | FilterOption[]
-    | ((stats: { key: string; count: number }[]) => FilterOption[]);
+    | readonly FilterOption[]           // اجازه readonly array
+    | ((stats: FilterStatsItem[]) => FilterOption[] | readonly FilterOption[]);
 };
+
 export interface FormField {
   type: "text" | "email" | "password" | "number" | "textarea" | "select" | "multi-select" | "checkbox" | "date" | "image" | "gallery";
   name: string;
@@ -34,11 +50,12 @@ export interface FormField {
   createOnly?: boolean;
   editOnly?: boolean;
   options?: string | Array<{ value: string | number; label: string }>;
+  rows?: number; // اضافه شده
 }
+
 export type BadgeConfig = { text: string; class: string };
 export type TagConfig = { text: string; class: string };
 export type DetailConfig = { label: string; value: string };
-
 export type StatusConfig = {
   text: string;
   icon: LucideIcon;
@@ -47,27 +64,31 @@ export type StatusConfig = {
 
 export type ResourceAction<T = any> = {
   label: string;
-  icon: LucideIcon;
-  colorClass: string;
-  hoverBgClass: string;
-  hoverRingClass: string;
-  rippleClass: string;
-  onClick?: (item: T, helpers?: ResourceHelpers) => void | Promise<void>; 
-  href?: string; 
+  /** متن نمایش داده شده کنار آیکن (اگر size !== "icon") */
+  text?: string;
+  icon: ComponentType<{ className?: string }>;
+  href?: string;
+  onClick?: () => Promise<void> | void;
+  variant?: "default" | "secondary" | "destructive" | "outline" | "ghost" | "link";
+  size?: "default" | "sm" | "lg" | "icon";
+  destructive?: boolean;
+  disabled?: boolean;
 };
-// در src/types/resource-types.ts
+
+
 export type ResourceHelpers = {
-  router?: any;  
+  router?: any;
   onBanToggle?: (ids: string[]) => Promise<any>;
   onUnbanToggle?: (ids: string[]) => Promise<any>;
   onPublishToggle?: (ids: string[]) => Promise<any>;
   onUnpublishToggle?: (ids: string[]) => Promise<any>;
   onDelete?: (ids: string[]) => Promise<any>;
 };
+
 export type ResourceConfig<T> = {
   label: string;
   singular: string;
-  icon: any; // LucideIcon
+  icon: any;
   color: string;
   createHref?: string;
   stats?: Record<string, StatConfig>;
@@ -93,12 +114,36 @@ export type ResourceConfig<T> = {
     stats: { key: string; count: number }[];
   }>;
 };
+
+// نوع ترکیبی برای منابع دارای فرم
+export type ResourceConfigWithForm<T = any> = ResourceConfig<T> & {
+  form: {
+    fields: readonly FormField[];
+    preload?: () => Promise<Record<string, any>>;
+    createAction?: (data: FormData) => Promise<any>;
+    updateAction?: (data: FormData, id: string) => Promise<any>;
+  };
+};
+
+// Type Guard واحد و درست
+export function hasFormConfig<T>(config: any): config is ResourceConfigWithForm<T> {
+  return (
+    config &&
+    typeof config === "object" &&
+    "form" in config &&
+    config.form &&
+    typeof config.form === "object" &&
+    Array.isArray(config.form.fields) &&
+    config.form.fields.length > 0
+  );
+}
+
 export interface CourseListItem {
   id: string;
   title?: string | null;
   slug?: string | null;
   code?: string | null;
-  status: string;               // "DRAFT" | "PENDING_REVIEW" | ...
+  status: string;
   isPublished: boolean;
   price?: number | null;
   instructor?: {
@@ -108,5 +153,32 @@ export interface CourseListItem {
   _count?: {
     buyers: number;
   };
-  [key: string]: any;           // برای انعطاف‌پذیری موقت
+  [key: string]: any;
 }
+
+
+export interface Role {
+  value: string;
+  label: string;
+  description?: string;
+  icon?: LucideIcon;
+  color?: string;
+  badgeColor?: string;
+  order: number;
+}
+export type StatItem = {
+  key: string;
+  count: number;
+};
+
+export type BulkActionItem = {
+  label: string;
+  action: string;
+  icon: React.ReactNode;
+  color: string;
+};
+
+
+export type TagItem = { text: string; class: string };
+export type DetailItem = { label: string; value: string };
+export type StatusItem = { text: string; icon: any; color: string };

@@ -1,15 +1,8 @@
 // src/config/roles.ts
+import { Role } from "@/types/resource-types";
 import { LucideIcon, Crown, Shield, BookOpen, Gavel, User, PenTool } from "lucide-react";
 
-export interface Role {
-  value: string;
-  label: string;
-  description?: string;
-  icon?: LucideIcon;
-  color?: string;
-  badgeColor?: string;
-  order: number;
-}
+
 
 export const ROLES = [
   {

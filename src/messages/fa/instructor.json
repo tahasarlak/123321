@@ -8,5 +8,86 @@
   "step_pricing": "قیمت و تخفیف",
   "step_content": "سرفصل و محتوا",
   "step_preview": "پیش‌نمایش",
-  "review_note": "پس از ارسال، دوره شما حداکثر ظرف ۲۴ ساعت بررسی و در صورت تأیید منتشر خواهد شد"
+  "review_note": "پس از ارسال، دوره شما حداکثر ظرف ۲۴ ساعت بررسی و در صورت تأیید منتشر خواهد شد",
+
+  "instructorCourses": {
+    "pageTitle": "دوره‌های من",
+    "pageDescription": "مدیریت دوره‌های آموزشی شما",
+    "label": "دوره‌های من",
+    "totalCount": "کل دوره‌ها",
+    "statistics": "آمار دوره‌ها",
+    "addNew": "ایجاد دوره جدید",
+    "create_title": "ایجاد دوره جدید",
+    "edit_title": "ویرایش دوره"
+  },
+  "instructorGroups": {
+    "pageTitle": "گروه‌های کلاسی",
+    "pageDescription": "مدیریت گروه‌های دانشجویان در دوره‌های شما",
+    "label": "گروه‌های دانشجویان",
+    "totalCount": "کل گروه‌ها",
+    "statistics": "آمار گروه‌ها",
+    "addNew": "ایجاد گروه جدید",
+    "create_title": "ایجاد گروه جدید",
+    "edit_title": "ویرایش گروه"
+  },
+  "instructorEnrollments": {
+    "pageTitle": "درخواست‌های ثبت‌نام",
+    "pageDescription": "بررسی و تأیید درخواست‌های ثبت‌نام دانشجویان",
+    "label": "درخواست‌های ثبت‌نام",
+    "totalCount": "کل درخواست‌ها",
+    "statistics": "آمار درخواست‌ها",
+    "item_not_found": "درخواست یافت نشد"
+  },
+  "instructorAssignments": {
+    "pageTitle": "تکالیف",
+    "pageDescription": "ایجاد و مدیریت تکالیف دوره‌های شما",
+    "label": "تکالیف",
+    "addNew": "ایجاد تکلیف جدید",
+    "create_title": "ایجاد تکلیف جدید",
+    "create_desc": "تکلیف جدیدی برای دانشجویان تعریف کنید",
+    "create_button": "ایجاد تکلیف"
+  },
+  "instructorCertificates": {
+    "pageTitle": "گواهی‌های صادر شده",
+    "pageDescription": "لیست گواهی‌های پایان دوره صادر شده برای دانشجویان",
+    "label": "گواهی‌های صادر شده"
+  },
+  "instructorFiles": {
+    "pageTitle": "فایل‌های ضمیمه",
+    "pageDescription": "آپلود و مدیریت فایل‌های آموزشی (جزوه، پروژه و ...)",
+    "label": "فایل‌های ضمیمه",
+    "addNew": "آپلود فایل جدید",
+    "create_title": "آپلود فایل جدید",
+    "create_desc": "فایل جدیدی برای دانشجویان آپلود کنید"
+  },
+  "instructorLessons": {
+    "pageTitle": "درس‌ها",
+    "pageDescription": "مدیریت درس‌های هر دوره (ویدیو، متن، آزمون و ...)",
+    "label": "درس‌ها",
+    "addNew": "ایجاد درس جدید",
+    "create_title": "ایجاد درس جدید",
+    "edit_title": "ویرایش درس"
+  },
+  "instructorSessions": {
+    "pageTitle": "جلسات زنده",
+    "pageDescription": "برنامه‌ریزی و مدیریت کلاس‌های آنلاین",
+    "label": "جلسات زنده",
+    "addNew": "برنامه‌ریزی جلسه جدید",
+    "create_title": "برنامه‌ریزی جلسه جدید",
+    "edit_title": "ویرایش جلسه"
+  },
+  "instructorNotifications": {
+    "pageTitle": "اعلان‌های ارسالی",
+    "pageDescription": "ارسال و مشاهده تاریخچه اعلان‌های شما به دانشجویان",
+    "label": "اعلان‌های ارسالی",
+    "addNew": "ارسال اعلان جدید",
+    "create_title": "ارسال اعلان جدید",
+    "create_desc": "پیام مهمی به دانشجویان ارسال کنید"
+  },
+  "instructorEarnings": {
+    "pageTitle": "درآمد و تسویه حساب",
+    "pageDescription": "مشاهده درآمد از دوره‌ها و درخواست برداشت وجه",
+    "label": "درآمد و تسویه حساب",
+    "addNew": "درخواست برداشت جدید"
+  }
 }

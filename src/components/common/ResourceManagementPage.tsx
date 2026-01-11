@@ -1,4 +1,3 @@
-// src/components/common/ResourceManagementPage.tsx
 "use client";
 
 import { useMemo, useCallback, useState, useTransition } from "react";
@@ -8,15 +7,19 @@ import { Loader2, Download, Plus, X } from "lucide-react";
 import { toast } from "sonner";
 import Swal from "sweetalert2";
 import { cn } from "@/lib/utils/cn";
-import { RESOURCE_DISPLAY_CONFIG } from "@/config/resources";
+import { FilterableResourceKey, RESOURCES_BY_ROLE } from "@/config/resources";
 import ResourceFilters from "../admin/Resource/ResourceFilters";
 import ResourceHeader from "../admin/Resource/ResourceHeader";
 import ResourceCard from "../admin/Resource/ResourceCard";
 import AdminGrid from "../admin/Resource/AdminGrid";
 import Pagination from "@/components/ui/Pagination";
+import type { ResourceAction, ResourceHelpers } from "@/types/resource-types";
 
 type ResourceManagementPageProps<T extends { id: string }> = {
-  resource: keyof typeof RESOURCE_DISPLAY_CONFIG;
+  resourceKey:
+    | keyof typeof RESOURCES_BY_ROLE.admin
+    | keyof typeof RESOURCES_BY_ROLE.instructor
+    | keyof typeof RESOURCES_BY_ROLE.blogger;
   items: T[];
   totalItems: number;
   currentPage: number;
@@ -35,7 +38,7 @@ type ResourceManagementPageProps<T extends { id: string }> = {
 };
 
 export default function ResourceManagementPage<T extends { id: string }>({
-  resource,
+  resourceKey,
   items,
   totalItems,
   currentPage,
@@ -48,20 +51,23 @@ export default function ResourceManagementPage<T extends { id: string }>({
   translations = {},
 }: ResourceManagementPageProps<T>) {
   const router = useRouter();
-  const t = useTranslations(`admin.${resource}`);
+  const t = useTranslations(`admin.${resourceKey}`);
   const commonT = useTranslations("common");
 
-  const config = RESOURCE_DISPLAY_CONFIG[resource];
+  const config = (
+    RESOURCES_BY_ROLE.admin[resourceKey as keyof typeof RESOURCES_BY_ROLE.admin] ??
+    RESOURCES_BY_ROLE.instructor[resourceKey as keyof typeof RESOURCES_BY_ROLE.instructor] ??
+    RESOURCES_BY_ROLE.blogger[resourceKey as keyof typeof RESOURCES_BY_ROLE.blogger]
+  ) as any;
 
   if (!config) {
     return (
       <div className="p-20 text-center text-4xl text-destructive">
-        {commonT("resourceNotFound", { resource })}
+        {commonT("resourceNotFound", { resource: resourceKey })}
       </div>
     );
   }
 
-  // انتخاب چندتایی
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
 
@@ -84,21 +90,17 @@ export default function ResourceManagementPage<T extends { id: string }>({
 
   const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
-  // bulk actions از config
   const bulkActions = useMemo(() => {
-    if (!config.bulkActions?.length) return [];
-
+    if (!config.bulkActions || config.bulkActions.length === 0) return [];
     const bulkT = translations.bulkActions || {};
-
-    return config.bulkActions.map((bulk) => ({
+    return config.bulkActions.map((bulk: any) => ({
       ...bulk,
       label:
-        bulkT[`${resource}Bulk${bulk.action.charAt(0).toUpperCase() + bulk.action.slice(1)}`] ||
+        bulkT[`${resourceKey}Bulk${bulk.action.charAt(0).toUpperCase() + bulk.action.slice(1)}`] ||
         bulk.label,
     }));
-  }, [config.bulkActions, translations.bulkActions, resource]);
+  }, [config.bulkActions, translations.bulkActions, resourceKey]);
 
-  // handle bulk action
   const handleBulk = useCallback(
     async (action: string) => {
       if (selectedIds.size === 0) {
@@ -120,12 +122,12 @@ export default function ResourceManagementPage<T extends { id: string }>({
       startTransition(async () => {
         try {
           const res = await onBulkAction(Array.from(selectedIds), action);
-          if (res.success) {
+          if (res?.success) {
             toast.success(res.message);
             clearSelection();
             router.refresh();
           } else {
-            toast.error(res.message);
+            toast.error(res?.message || "عملیات ناموفق بود");
           }
         } catch {
           toast.error(t("bulkError") || "خطا در عملیات گروهی");
@@ -135,8 +137,8 @@ export default function ResourceManagementPage<T extends { id: string }>({
     [selectedIds, onBulkAction, t, commonT, router, clearSelection]
   );
 
-  // handle export
   const [isExporting, setIsExporting] = useState(false);
+
   const handleExport = useCallback(async () => {
     setIsExporting(true);
     try {
@@ -146,7 +148,7 @@ export default function ResourceManagementPage<T extends { id: string }>({
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${resource}-export-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `${resourceKey}-export-${new Date().toISOString().slice(0, 10)}.csv`;
         a.click();
         URL.revokeObjectURL(url);
         toast.success(t("exportSuccess") || "خروجی با موفقیت دانلود شد");
@@ -156,28 +158,29 @@ export default function ResourceManagementPage<T extends { id: string }>({
     } finally {
       setIsExporting(false);
     }
-  }, [onExport, resource, t]);
+  }, [onExport, resourceKey, t]);
 
-  // helpers برای actions کارت
-  const helpers = useMemo(() => ({
-    router,
-    onBanToggle: (ids: string[]) => onBulkAction(ids, "ban"),
-    onUnbanToggle: (ids: string[]) => onBulkAction(ids, "unban"),
-    onPublishToggle: (ids: string[]) => onBulkAction(ids, "publish"),
-    onUnpublishToggle: (ids: string[]) => onBulkAction(ids, "unpublish"),
-    onDelete: (ids: string[]) => onBulkAction(ids, "delete"),
-  }), [router, onBulkAction]);
+  const helpers = useMemo<ResourceHelpers>(
+    () => ({
+      router,
+      onBanToggle: (ids) => onBulkAction(ids, "ban"),
+      onUnbanToggle: (ids) => onBulkAction(ids, "unban"),
+      onPublishToggle: (ids) => onBulkAction(ids, "publish"),
+      onUnpublishToggle: (ids) => onBulkAction(ids, "unpublish"),
+      onDelete: (ids) => onBulkAction(ids, "delete"),
+    }),
+    [router, onBulkAction]
+  );
 
-  // getCardActions با رفع خطای نوع
   const getCardActions = useCallback(
-    (item: T) => {
+    (item: T): ResourceAction[] => {
       if (!config.actions) return [];
       try {
         const safeItem = item as any;
         const rawActions = config.actions(safeItem, helpers);
         return rawActions.map((action: any) => ({
           ...action,
-          onClick: action.onClick ? () => action.onClick(safeItem, helpers) : undefined,
+          onClick: action.onClick ? () => action.onClick?.() : undefined,
         }));
       } catch (err) {
         console.error("Card actions error:", err);
@@ -195,14 +198,14 @@ export default function ResourceManagementPage<T extends { id: string }>({
         <ResourceCard
           key={id}
           item={item}
-          resource={resource}
+          resourceKey={resourceKey}
           isSelected={isSelected}
           onToggleSelect={() => toggleSelect(id)}
           getActions={getCardActions}
         />
       );
     },
-    [resource, selectedIds, toggleSelect, getCardActions, getItemId]
+    [resourceKey, selectedIds, toggleSelect, getCardActions, getItemId]
   );
 
   const allSelected = selectedIds.size > 0 && selectedIds.size === items.length;
@@ -210,9 +213,8 @@ export default function ResourceManagementPage<T extends { id: string }>({
 
   return (
     <div className="container mx-auto px-6 py-12 md:py-20 max-w-7xl space-y-12 md:space-y-20">
-      {/* هدر بدون bulkActions — تمیز و بدون تکرار */}
       <ResourceHeader
-        resource={resource}
+        resource={resourceKey}
         totalItems={totalItems}
         stats={stats}
         translations={{
@@ -223,9 +225,12 @@ export default function ResourceManagementPage<T extends { id: string }>({
         config={config}
       />
 
-      <ResourceFilters resource={resource} initialSearch={searchValue} filterStats={stats} />
+      <ResourceFilters
+        resourceKey={resourceKey as FilterableResourceKey | undefined}
+        initialSearch={searchValue}
+        filterStats={stats}
+      />
 
-      {/* دکمه افزودن جدید + export + select all */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
         <div className="flex flex-wrap items-center gap-6">
           {config.createHref && (
@@ -263,12 +268,10 @@ export default function ResourceManagementPage<T extends { id: string }>({
         )}
       </div>
 
-      {/* گرید */}
       <AdminGrid columns={{ default: 1, md: 2, lg: 3, xl: 4 }} gap="lg">
         {hasItems ? items.map(renderItem) : null}
       </AdminGrid>
 
-      {/* Empty State ساده */}
       {!hasItems && (
         <div className="py-20 text-center space-y-6">
           <h3 className="text-4xl font-bold text-muted-foreground">
@@ -280,20 +283,18 @@ export default function ResourceManagementPage<T extends { id: string }>({
         </div>
       )}
 
-      {/* صفحه‌بندی */}
       {totalPages > 1 && (
         <div className="mt-16">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             totalItems={totalItems}
-            translationNamespace={`admin.${resource}`}
+            translationNamespace={`admin.${resourceKey}`}
           />
         </div>
       )}
 
-      {/* نوار ثابت bulk — با دکمه لغو انتخاب */}
-      {selectedIds.size > 0 && (
+      {selectedIds.size > 0 && bulkActions.length > 0 && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-card/95 backdrop-blur-xl border border-border rounded-3xl shadow-2xl p-6 flex items-center gap-8 animate-in fade-in slide-in-from-bottom">
           <button
             onClick={clearSelection}
@@ -308,7 +309,7 @@ export default function ResourceManagementPage<T extends { id: string }>({
           </span>
 
           <div className="flex gap-4">
-            {bulkActions.map((action) => (
+            {bulkActions.map((action: any) => (
               <button
                 key={action.action}
                 onClick={() => handleBulk(action.action)}

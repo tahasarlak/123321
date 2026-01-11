@@ -11,44 +11,54 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "use-debounce";
 import { Search, Plus, X, ChevronDown } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { RESOURCE_DISPLAY_CONFIG } from "@/config/resources";
-import { FilterOption, ResourceFilter } from "@/types/resource-types";
-import ResourceActions, { ResourceAction } from "./ResourceActions";
 
-type FilterOptionWithCount = FilterOption & { count?: number };
-type FilterStatsItem = { key: string; count: number };
+import {
+  ALL_FILTERABLE_RESOURCES,
+  type FilterableResourceKey,
+} from "@/config/resources";
+
+import {
+  FilterOption,
+  FilterOptionWithCount,
+  FiltersState,
+  FilterStatsItem,
+  ResourceAction,
+} from "@/types/resource-types";
+
+import ResourceActions from "./ResourceActions";
 
 interface ResourceFiltersProps {
-  resource: keyof typeof RESOURCE_DISPLAY_CONFIG;
+  resourceKey?: FilterableResourceKey; // اختیاری شد
   initialSearch?: string;
-  filterStats?: FilterStatsItem[] ; // default رو داخل کامپوننت مدیریت می‌کنیم
-}
-
-interface FiltersState {
-  search: string;
-  filters: Record<string, string>;
+  filterStats?: FilterStatsItem[];
 }
 
 const DEBOUNCE_DELAY = 300;
 
 export default function ResourceFilters({
-  resource,
+  resourceKey,
   initialSearch = "",
   filterStats = [],
 }: ResourceFiltersProps) {
-  const tResource = useTranslations(`admin.${resource}`);
+  // اگر resourceKey ندادن یا فیلتر نداره → رندر نکن
+  if (!resourceKey || !ALL_FILTERABLE_RESOURCES[resourceKey]) {
+    return null;
+  }
+
+  const config = ALL_FILTERABLE_RESOURCES[resourceKey];
+
   const tCommon = useTranslations("common");
-  const config = RESOURCE_DISPLAY_CONFIG[resource];
+  const tResource = useTranslations(resourceKey);
+
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // محاسبه state از URL
   const urlState = useMemo<FiltersState>(() => {
     const search = searchParams.get("search")?.trim() || initialSearch.trim();
     const filters: Record<string, string> = {};
 
-    config.filters?.forEach((f: ResourceFilter) => {
+    config.filters.forEach((f) => {
       const val = searchParams.get(f.param)?.trim();
       if (val) filters[f.param] = val;
     });
@@ -57,16 +67,12 @@ export default function ResourceFilters({
   }, [searchParams, config.filters, initialSearch]);
 
   const [state, setState] = useState<FiltersState>(urlState);
-  const [isPending, startPendingTransition] = useState(false); // برای وضوح بیشتر
+  const [isPending, setIsPending] = useState(false);
 
-  // همگام‌سازی با تغییرات URL
   useEffect(() => {
-    startTransition(() => {
-      setState(urlState);
-    });
+    startTransition(() => setState(urlState));
   }, [urlState]);
 
-  // ساخت query string
   const createQueryString = useCallback(
     (nextState: FiltersState): string => {
       const params = new URLSearchParams(searchParams.toString());
@@ -78,10 +84,8 @@ export default function ResourceFilters({
         params.delete("search");
       }
 
-      // پاک کردن همه فیلترهای قدیمی
-      config.filters?.forEach((f) => params.delete(f.param));
+      config.filters.forEach((f) => params.delete(f.param));
 
-      // اضافه کردن فیلترهای جدید
       Object.entries(nextState.filters).forEach(([key, value]) => {
         const trimmed = value.trim();
         if (trimmed) params.set(key, trimmed);
@@ -93,22 +97,17 @@ export default function ResourceFilters({
     [searchParams, config.filters]
   );
 
-  // به‌روزرسانی URL با debounce
   const updateUrl = useDebouncedCallback(
     (query: string) => {
-      startPendingTransition(true);
+      setIsPending(true);
       router.replace(`${pathname}?${query}`, { scroll: false });
-      // پایان pending بعد از مدت کوتاه
-      const timer = setTimeout(() => startPendingTransition(false), 200);
-      return () => clearTimeout(timer);
+      setTimeout(() => setIsPending(false), 200);
     },
     DEBOUNCE_DELAY
   );
 
-  // cleanup debounce موقع unmount
   useEffect(() => () => updateUrl.cancel(), [updateUrl]);
 
-  // تابع به‌روزرسانی فیلترها
   const updateFilters = useCallback(
     (updater: (prev: FiltersState) => FiltersState) => {
       setState((prev) => {
@@ -151,42 +150,58 @@ export default function ResourceFilters({
 
   const handleReset = useCallback(() => {
     updateUrl.cancel();
-    startPendingTransition(true);
+    setIsPending(true);
     const emptyState: FiltersState = { search: "", filters: {} };
     setState(emptyState);
     router.replace(`${pathname}?page=1`, { scroll: false });
-    setTimeout(() => startPendingTransition(false), 200);
+    setTimeout(() => setIsPending(false), 200);
   }, [router, pathname, updateUrl]);
 
   const hasActiveFilters =
     state.search.trim().length > 0 || Object.keys(state.filters).length > 0;
 
-  // محاسبه گزینه‌های فیلتر با شمارنده
-  const filterOptionsMap = useMemo<Record<string, FilterOptionWithCount[]>>(() => {
-    const map: Record<string, FilterOptionWithCount[]> = {};
+  const filterOptionsMap = useMemo<Record<string, FilterOptionWithCount[]>>(
+    () => {
+      const map: Record<string, FilterOptionWithCount[]> = {};
 
-    config.filters?.forEach((filter: ResourceFilter) => {
-      const rawOptions =
-        typeof filter.options === "function"
-          ? filter.options(filterStats)
-          : filter.options ?? [];
+      config.filters.forEach((filter) => {
+        const rawOptions =
+          typeof filter.options === "function"
+            ? filter.options(filterStats)
+            : filter.options;
 
-      if (rawOptions.length === 0) return;
+        if (rawOptions.length === 0) return;
 
-      const optionsWithCount = rawOptions.map((opt: FilterOption) => ({
-        ...opt,
-        count: filterStats.find((s) => s.key === opt.value)?.count,
-      }));
+        const normalizedOptions = Array.isArray(rawOptions)
+          ? rawOptions.map((item): FilterOption => {
+              if (typeof item === "string") {
+                return { value: item, label: item };
+              }
+              const { icon, ...rest } = item as any;
+              return {
+                ...rest,
+                ...(typeof icon === "function" ? { icon } : {}),
+              };
+            })
+          : [];
 
-      map[filter.param] = optionsWithCount;
-    });
+        const optionsWithCount = normalizedOptions.map((opt) => ({
+          ...opt,
+          count: filterStats.find((s) => s.key === opt.value)?.count,
+        }));
 
-    return map;
-  }, [config.filters, filterStats]);
+        map[filter.param] = optionsWithCount;
+      });
 
-  // فقط فیلترهایی که گزینه دارن نمایش داده بشن
-  const visibleFilters = useMemo<ResourceFilter[]>(() => {
-    return config.filters?.filter((f) => filterOptionsMap[f.param]?.length > 0) ?? [];
+      return map;
+    },
+    [config.filters, filterStats]
+  );
+
+  const visibleFilters = useMemo(() => {
+    return config.filters.filter(
+      (f) => filterOptionsMap[f.param]?.length > 0
+    );
   }, [config.filters, filterOptionsMap]);
 
   const searchPlaceholder =
@@ -240,22 +255,18 @@ export default function ResourceFilters({
         className="flex flex-col lg:flex-row gap-6 items-stretch lg:items-end"
         noValidate
       >
-        {/* Search Input */}
         <div className="relative flex-1 min-w-0">
-          <label htmlFor={`search-${String(resource)}`} className="sr-only">
+          <label htmlFor={`search-${resourceKey}`} className="sr-only">
             {searchPlaceholder}
           </label>
           <Search className="absolute inset-y-0 left-4 h-6 w-6 text-muted-foreground pointer-events-none" />
           <input
-            id={`search-${String(resource)}`}
+            id={`search-${resourceKey}`}
             type="search"
             value={state.search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={searchPlaceholder}
             className="w-full pl-14 pr-5 py-3 rounded-2xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition placeholder:text-muted-foreground/70 disabled:opacity-50"
-            autoComplete="off"
-            enterKeyHint="search"
-            aria-label={searchPlaceholder}
             disabled={isPending}
           />
           {isPending && (
@@ -265,13 +276,14 @@ export default function ResourceFilters({
           )}
         </div>
 
-        {/* Filters */}
-        {visibleFilters.map((filter: ResourceFilter) => {
+        {visibleFilters.map((filter) => {
           const options = filterOptionsMap[filter.param] ?? [];
+
           const label =
             tResource(`filters.${filter.param}.label`) ||
-            filter.label ||
+            ("label" in filter && filter.label) ||
             filter.param;
+
           const allOptionText =
             tResource(`filters.${filter.param}.all`) || allText;
 
@@ -285,26 +297,21 @@ export default function ResourceFilters({
                 value={state.filters[filter.param] ?? ""}
                 onChange={(e) => handleFilterChange(filter.param)(e.target.value)}
                 className="w-full px-4 py-3 pr-12 rounded-2xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition cursor-pointer appearance-none disabled:opacity-50"
-                aria-label={label}
                 disabled={isPending}
               >
                 <option value="">{allOptionText}</option>
-                {options.map((opt: FilterOptionWithCount) => (
+                {options.map((opt) => (
                   <option key={opt.value} value={opt.value}>
                     {opt.label}
                     {opt.count !== undefined && ` (${opt.count})`}
                   </option>
                 ))}
               </select>
-              <ChevronDown
-                className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none"
-                aria-hidden="true"
-              />
+              <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             </div>
           );
         })}
 
-        {/* Actions */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <ResourceActions actions={actions} />
         </div>
